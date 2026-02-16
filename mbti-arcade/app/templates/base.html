@@ -105,6 +105,13 @@
         </div>
     </nav>
 
+    <div id="stickerAwardPopup" class="pointer-events-none fixed inset-x-0 top-20 z-50 hidden px-4" role="status" aria-live="polite">
+        <div class="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-lg">
+            <p id="stickerAwardPopupText" class="min-w-0 truncate font-medium">스티커가 지급되었습니다.</p>
+            <button id="stickerAwardPopupClose" type="button" class="focus-ring pointer-events-auto rounded-lg bg-emerald-700 px-3 py-1 text-xs font-semibold text-white">닫기</button>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="shell py-8 md:py-10">
         {% block content %}{% endblock %}
@@ -145,5 +152,38 @@
     </footer>
 
     {% block scripts %}{% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var popup = document.getElementById('stickerAwardPopup');
+        var text = document.getElementById('stickerAwardPopupText');
+        var closeButton = document.getElementById('stickerAwardPopupClose');
+        if (!popup || !text || !closeButton) {
+            return;
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        var awarded = params.get('sticker_awarded');
+        var stickerName = (params.get('sticker_name') || '').trim();
+
+        if (awarded !== '1') {
+            return;
+        }
+
+        text.textContent = stickerName ? ('새 스티커 지급: ' + stickerName) : '새 스티커가 지급되었습니다.';
+        popup.classList.remove('hidden');
+
+        var hidePopup = function () {
+            popup.classList.add('hidden');
+        };
+
+        closeButton.addEventListener('click', hidePopup);
+        setTimeout(hidePopup, 5000);
+
+        params.delete('sticker_awarded');
+        params.delete('sticker_name');
+        var next = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '') + window.location.hash;
+        window.history.replaceState({}, '', next);
+    });
+    </script>
 </body>
 </html>
