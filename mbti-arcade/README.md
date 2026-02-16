@@ -1,6 +1,6 @@
-# 🎮 MBTI & Arcade Web Service
+# 360Me (Perception Gap)
 
-다양한 심리 검사와 재미있는 아케이드 게임을 제공하는 웹 서비스입니다.
+"If I were you" 관점에서 Self vs Others 인식 차이를 비교하는 웹 서비스입니다.
 
 ## ✨ 주요 기능
 
@@ -9,10 +9,6 @@
 - **상대방 입장에서 평가**: "내가 000 이라고 생각하고 MBTI를 작성해주세요"
 - **실제 MBTI 비교**: "000의 실제 MBTI는 무엇인가요?" 기능
 - **향후 추가 예정**: 에니어그램, 사랑의 언어, 스트레스 지수, 자기효능감, 감정 지능
-
-### 🎮 아케이드 게임
-- **다양한 게임**: 스네이크, 테트리스, 퍼즐 등
-- **게임 통계**: 점수 기록 및 순위 확인
 
 ## 🚀 빠른 시작
 
@@ -89,7 +85,6 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - **메인 페이지**: http://localhost:8000
 - **MBTI 테스트**: http://localhost:8000/mbti
 - **친구 MBTI 평가**: http://localhost:8000/mbti/friend
-- **아케이드 게임**: http://localhost:8000/arcade
 
 ## 🛠️ 개발 도구
 
@@ -153,7 +148,6 @@ mbti-arcade/
 │   ├── models.py            # Pydantic 모델
 │   ├── routers/
 │   │   ├── mbti.py         # MBTI 관련 라우터
-│   │   └── arcade.py       # 아케이드 게임 라우터
 │   ├── static/             # 정적 파일
 │   └── templates/          # HTML 템플릿
 ├── requirements.txt         # Python 의존성
@@ -192,9 +186,8 @@ make test
 5. **비교 분석**: 평가된 MBTI와 실제 MBTI 비교
 
 ### 네비게이션
-- **드롭다운 메뉴**: 검사 서비스와 게임 서비스로 분류
-- **모바일 반응형**: 모바일에서도 사용하기 편한 햄버거 메뉴
-- **향후 확장성**: 준비 중인 서비스들도 표시
+- **핵심 동선**: Self 테스트 → 초대 링크 생성 → 결과 확인
+- **모바일 반응형**: 모바일에서도 사용하기 편한 메뉴
 
 ## 🤝 기여하기
 
@@ -238,4 +231,4 @@ pip install -r requirements.txt
 
 ---
 
-**MBTI & Arcade Web Service** - 다양한 심리 검사와 재미있는 아케이드 게임을 즐겨보세요! 🎮✨ 
+360Me - Self vs Others 인식 차이를 비교해보세요.

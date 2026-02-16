@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}홈 - MBTI & Arcade Web Service{% endblock %}
+{% block title %}홈 - 360Me{% endblock %}
 
 {% block content %}
 <div class="text-center">
@@ -40,29 +40,6 @@
                         Self 테스트 진행하기
                     </a>
                 </div>
-            </div>
-
-            <!-- Calculate Service CTA -->
-            <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div class="text-5xl mb-4">➗</div>
-                <h3 class="text-xl font-bold text-gray-800 mb-3">수학 연산 연습</h3>
-                <p class="text-gray-600 mb-4 text-sm">
-                    초등 연산 문제로 실력을 다져보세요.
-                    덧셈, 뺄셈, 곱셈, 나눗셈을 난이도별로 제공합니다.
-                </p>
-                <div class="space-y-2">
-                    <a href="{{ calculate_service_url }}"
-                       class="block w-full bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm">
-                        서비스 소개
-                    </a>
-                    <a href="{{ calculate_service_problems_url }}"
-                       class="block w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm">
-                        문제 바로 풀기
-                    </a>
-                </div>
-                <p class="mt-4 text-xs text-gray-500">
-                    학습 이력은 로그인 없이 가볍게 시작할 수 있어요.
-                </p>
             </div>
 
             <!-- 향후 추가될 검사들 -->
@@ -109,42 +86,6 @@
                 <button disabled class="w-full bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed text-sm">
                     준비 중
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 게임 서비스 섹션 -->
-    <div class="mb-16">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">🎮 아케이드 게임</h2>
-        <div class="max-w-4xl mx-auto rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-            <p class="text-lg text-gray-600">
-                아케이드 게임과 통계 기능은 새 버전에서 만날 수 있도록 준비 중입니다.
-                업데이트가 완료되면 이 자리에서 가장 먼저 알려드릴게요!
-            </p>
-            <div class="mt-6 inline-flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm text-gray-500 shadow-sm">
-                <span class="text-xl">⏳</span>
-                <span>공개 알림을 원하시면 뉴스레터를 통해 안내드릴 예정입니다.</span>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- 최근 통계 -->
-    <div class="bg-blue-50 rounded-lg p-8 max-w-4xl mx-auto">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📈 서비스 현황</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 mb-2">1,234</div>
-                <div class="text-gray-600">총 MBTI 테스트</div>
-            </div>
-            <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 mb-2">567</div>
-                <div class="text-gray-600">게임 플레이</div>
-            </div>
-            <div class="text-center">
-                <div class="text-3xl font-bold text-purple-600 mb-2">89</div>
-                <div class="text-gray-600">친구 평가</div>
             </div>
         </div>
     </div>
