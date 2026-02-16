@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing import Dict, Iterable, List
@@ -13,7 +12,7 @@ CONTEXT_TO_SEEDS: Dict[str, List[QuestionSeed]] = {
 }
 MODE_TO_CONTEXTS: Dict[str, set[str]] = {
     "basic": {"common"},
-    "friend": {"common", "friend"},
+    "friend": {"friend"},
     "couple": {"common", "couple"},
     "work": {"work"},
     "partner": {"partner"},
@@ -45,9 +44,7 @@ def questions_for_mode(mode: str) -> List[Dict[str, object]]:
         raise ValueError(f"Unsupported mode: {mode}")
     contexts = MODE_TO_CONTEXTS[normalized]
     seeds: list[QuestionSeed] = [
-        seed
-        for context in contexts
-        for seed in CONTEXT_TO_SEEDS.get(context, [])
+        seed for context in contexts for seed in CONTEXT_TO_SEEDS.get(context, [])
     ]
     seeds.sort(key=lambda seed: seed.id)
     return [question_payload(seed) for seed in seeds]

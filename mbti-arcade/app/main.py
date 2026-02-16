@@ -211,9 +211,9 @@ RELATION_CANONICAL: dict[str, str] = {
 
 RELATION_QUESTION_SET: dict[str, str] = {
     "friend": "friend",
-    "coworker": "friend",
-    "partner": "friend",
-    "family": "friend",
+    "coworker": "work",
+    "partner": "partner",
+    "family": "family",
     "other": "friend",
 }
 
