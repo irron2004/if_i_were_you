@@ -874,6 +874,12 @@ async def mbti_result(request: Request):
     return response
 
 
+@app.get("/mbti/result/{token}")
+async def mbti_friend_result_redirect(request: Request, token: str):
+    invite_url = build_invite_url(request, token)
+    return RedirectResponse(url=invite_url, status_code=307)
+
+
 @app.post("/mbti/result/{token}", response_class=HTMLResponse)
 async def mbti_friend_result(request: Request, token: str):
     """친구 테스트 결과 제출 (토큰 기반)"""
