@@ -1,22 +1,21 @@
 from __future__ import annotations
 
+import importlib.util
 import os
-import subprocess
+import sys
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+APP_ROOT = BASE_DIR / "mbti-arcade"
 
-def main() -> None:
-    base_dir = Path(__file__).resolve().parent / "mbti-arcade"
-    os.chdir(base_dir)
+os.chdir(APP_ROOT)
+sys.path.insert(0, str(APP_ROOT))
 
-    subprocess.run(["alembic", "upgrade", "head"], check=True)
+module_path = APP_ROOT / "app" / "main.py"
+spec = importlib.util.spec_from_file_location("mbti_app_main", module_path)
+if spec is None or spec.loader is None:
+    raise RuntimeError("Unable to load mbti-arcade app module")
 
-    port = os.environ.get("PORT", "8000")
-    os.execvp(
-        "uvicorn",
-        ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", port],
-    )
-
-
-if __name__ == "__main__":
-    main()
+mbti_app_main = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mbti_app_main)
+app = mbti_app_main.app
