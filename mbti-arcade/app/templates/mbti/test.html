@@ -42,6 +42,7 @@
         <input type="hidden" name="friend_mbti" value="{{ friend_mbti_value }}">
         <input type="hidden" name="relationship" value="{{ relationship_value }}">
         <input type="hidden" name="relation_label" value="{{ relation_label_value }}">
+        <input type="hidden" name="question_mode" value="{{ question_mode if question_mode is defined else 'friend' }}">
         <input type="hidden" name="responder_name" value="{{ responder_value }}">
         <input type="hidden" name="participant_id" value="{{ friend_info.participant_id if friend_info else '' }}">
         <input type="hidden" name="invite_token" value="{{ friend_info.invite_token if friend_info else '' }}">

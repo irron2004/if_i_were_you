@@ -209,6 +209,14 @@ RELATION_CANONICAL: dict[str, str] = {
     "other": "other",
 }
 
+RELATION_QUESTION_SET: dict[str, str] = {
+    "friend": "friend",
+    "coworker": "friend",
+    "partner": "friend",
+    "family": "friend",
+    "other": "friend",
+}
+
 
 def _escape_js(value: object) -> str:
     if value is None:
@@ -352,6 +360,11 @@ _DEFAULT_SUMMARY = {
     "title": "Insight Coming Soon",
     "description": "We are preparing a richer profile for this result.",
 }
+
+
+def _resolve_relation_question_mode(relation_value: str) -> str:
+    canonical = RELATION_CANONICAL.get(relation_value, relation_value)
+    return RELATION_QUESTION_SET.get(canonical, "friend")
 
 
 def _score_answers(
@@ -613,13 +626,15 @@ async def submit_friend(request: Request):
         "invite_token": invite_token,
     }
 
-    questions = _build_questions("friend", perspective="other")
+    question_mode = _resolve_relation_question_mode(relation_value)
+    questions = _build_questions(question_mode, perspective="other")
     response = templates.TemplateResponse(
         "mbti/test.html",
         {
             "request": request,
             "questions": questions,
             "friend_info": friend_info,
+            "question_mode": question_mode,
         },
     )
     apply_noindex_headers(response)
@@ -634,7 +649,8 @@ async def mbti_test(
     relationship: str | None = None,
     responder_name: str | None = None,
 ):
-    questions = _build_questions("friend", perspective="other")
+    question_mode = _resolve_relation_question_mode(relationship or "friend")
+    questions = _build_questions(question_mode, perspective="other")
     friend_info = None
     if friend_name or friend_mbti or relationship or responder_name:
         friend_info = {
@@ -649,6 +665,7 @@ async def mbti_test(
             "request": request,
             "questions": questions,
             "friend_info": friend_info,
+            "question_mode": question_mode,
         },
     )
 
@@ -656,6 +673,7 @@ async def mbti_test(
 @app.post("/mbti/self-result", response_class=HTMLResponse)
 async def mbti_self_result(request: Request):
     form = await request.form()
+    owner_name = (form.get("owner_name") or "").strip() or "공유자"
     answer_pairs = []
     for key, value in form.items():
         if not key.startswith("q"):
@@ -686,7 +704,7 @@ async def mbti_self_result(request: Request):
             expires_at=compute_expiry(72),
             max_raters=50,
             self_mbti=mbti_type,
-            snapshot_owner_name="공유자",
+            snapshot_owner_name=owner_name,
         )
         db.add(session)
         invite_token = session.invite_token
@@ -701,6 +719,7 @@ async def mbti_self_result(request: Request):
             "scores": scores,
             "result": result,
             "invite_url": invite_url,
+            "owner_name": owner_name,
             "robots_meta": NOINDEX_VALUE,
         },
     )
