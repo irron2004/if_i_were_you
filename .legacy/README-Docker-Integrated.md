@@ -15,7 +15,7 @@ web_service/
 │       └── default.conf       # 서버 라우팅 설정
 ├── main-service/              # 메인 허브 서비스
 ├── math-app/                  # (제거됨) → calculate_math/frontend 참고
-├── mbti-arcade/              # MBTI & Arcade 서비스
+├── mbti-arcade/              # 360Me (perception gap) 서비스
 └── calculate_math/            # (2025-10) 별도 저장소 → https://github.com/irron2004/calculate_math
 ```
 
@@ -24,10 +24,7 @@ web_service/
 하나의 도메인에서 경로 기반으로 서비스에 접근할 수 있습니다:
 
 - **메인 허브**: `http://yourdomain.com/` 또는 `http://localhost/`
-- **수학 게임**: `http://yourdomain.com/math` 또는 `http://localhost/math`
 - **MBTI 검사**: `http://yourdomain.com/mbti` 또는 `http://localhost/mbti`
-- **아케이드 게임**: `http://yourdomain.com/arcade` 또는 `http://localhost/arcade`
-> `calculate-service`는 2025-10부터 독립 저장소([calculate_math](https://github.com/irron2004/calculate_math))에서 유지합니다. Compose 스택에는 포함되지 않으며, 필요 시 별도 배포 후 프록시 경로를 직접 구성하세요. React 학습 UI 역시 동일 저장소의 `frontend/`에서 관리합니다.
 
 ## 🛠️ 설치 및 실행
 
@@ -51,9 +48,7 @@ docker-compose up --build
 실행 후 다음 URL로 접속할 수 있습니다:
 
 - **메인 허브**: http://localhost
-- **수학 게임**: http://localhost/math
 - **MBTI 검사**: http://localhost/mbti
-- **아케이드 게임**: http://localhost/arcade
 
 ## 🔧 서비스 구성
 
@@ -69,16 +64,10 @@ docker-compose up --build
 - **역할**: 중앙 허브 페이지 제공
 - **기술**: FastAPI + Jinja2Templates
 
-### 수학 게임 (calculate_math/frontend)
-
-- **프론트엔드**: React + TypeScript (`calculate_math/frontend`)
-- **백엔드**: FastAPI + SQLite (`calculate_math/app`)
-- **배포**: `calc.360me.app` (nginx는 `/math`, `/math-api` 요청을 외부 도메인으로 리다이렉트)
-
-### MBTI & Arcade (mbti-arcade)
+### MBTI (mbti-arcade)
 
 - **기술**: FastAPI + Jinja2Templates
-- **경로**: `/mbti` (MBTI 검사), `/arcade` (게임)
+- **경로**: `/mbti` (MBTI 검사)
 
 ## 🔄 개발 모드
 
@@ -191,7 +180,6 @@ docker-compose logs main-hub
 curl http://localhost/health
 
 # 각 서비스 헬스 체크
-curl http://localhost/math/health
 curl http://localhost/mbti/health
 ```
 

@@ -1,187 +1,95 @@
 {% extends "base.html" %}
 
-{% block title %}MBTI 인사이트 허브 - MBTI & Arcade{% endblock %}
+{% block title %}if i were you{% endblock %}
 
 {% block head %}
 {{ super() }}
 <style>
     .focus-outline:focus-visible {
-        outline: 3px solid rgba(59, 130, 246, 0.9);
-        outline-offset: 4px;
+        outline: 3px solid color-mix(in srgb, var(--accent) 82%, #ffffff 18%);
+        outline-offset: 3px;
+    }
+
+    .section-card {
+        background: color-mix(in srgb, var(--surface) 95%, white 5%);
+        border: 1px solid var(--line);
+        border-radius: 1.25rem;
+        box-shadow: 0 16px 35px -30px rgba(29, 27, 25, 0.5);
+    }
+
+    .hero-gradient {
+        background:
+            radial-gradient(circle at 15% 15%, rgba(204, 251, 241, 0.8), transparent 32%),
+            radial-gradient(circle at 90% 0%, rgba(254, 215, 170, 0.55), transparent 35%),
+            linear-gradient(130deg, #f7efe5 0%, #ecf7f4 45%, #f7f0e8 100%);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-16">
-    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-sky-600 to-emerald-500 text-white">
-        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')]"></div>
-        <div class="relative z-10 px-6 py-12 md:py-16 md:px-12 lg:px-16">
-            <div class="max-w-4xl mx-auto text-center">
-                <span class="inline-flex items-center rounded-full bg-white/10 px-4 py-1 text-sm font-medium tracking-wide uppercase">
-                    Self → Invite → Aggregate · 함께 살펴보는 인식 지도
-                </span>
-                <h1 class="mt-6 text-4xl md:text-5xl font-bold leading-tight">
-                    사람들이 보는 ‘나’ — 관계별 인식 지도를 만들어 보세요
-                </h1>
-                <p class="mt-6 text-lg md:text-xl text-white/90">
-                    내가 느끼는 나(Self)와 사람들이 느끼는 나(Others)를 가볍게 비교해 볼 수 있는 테스트예요. 몇 분이면 관계별 인사이트를 확인할 수 있어요.
-                </p>
-                <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-4">
-                    <a href="/mbti/share" class="focus-outline inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-indigo-900/30 transition-transform hover:-translate-y-0.5">
-                        🚀 시작하기
-                    </a>
-                    <a href="/mbti/self-test" class="focus-outline inline-flex items-center justify-center rounded-xl border border-white/60 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10">
-                        🧠 Self 테스트 먼저 하기
-                    </a>
-                </div>
-                <p class="mt-4 text-sm text-white/80">익명 참여 가능하고, 링크를 받은 사람만 결과를 볼 수 있어요.</p>
+<div class="space-y-12">
+    <section class="hero-gradient overflow-hidden rounded-3xl border border-[var(--line)] px-6 py-12 md:px-10 md:py-14">
+        <div class="mx-auto max-w-4xl text-center">
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--warm)]">perception gap reflection</p>
+            <h1 class="mt-4 text-3xl font-bold leading-tight text-[var(--ink)] md:text-5xl">
+                내가 느끼는 나와
+                다른 사람이 느끼는 나를
+                한 장의 지도에서 비교합니다
+            </h1>
+            <p class="mx-auto mt-5 max-w-3xl text-base leading-relaxed text-[var(--ink-soft)] md:text-lg">
+                이 서비스의 목적은 맞고 틀림을 가르는 것이 아니라, 서로의 차이를 이해하고 관계를 더 오래 건강하게 이어갈 대화의 출발점을 만드는 것입니다.
+            </p>
+            <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <a href="/mbti/self-test" class="focus-outline inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-semibold text-white transition hover:bg-[var(--accent-strong)]">
+                    1) 내가 느끼는 나 작성
+                </a>
+                <a href="/mbti/share" class="focus-outline inline-flex items-center justify-center rounded-xl border border-[var(--line)] bg-white px-6 py-3 text-base font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-strong)]">
+                    2) 타인의 시선 초대
+                </a>
             </div>
         </div>
     </section>
 
-    <section aria-labelledby="section-flow" class="grid gap-10 lg:grid-cols-[1.1fr_minmax(0,0.9fr)]">
-        <div class="space-y-6">
-            <div>
-                <h2 id="section-flow" class="text-3xl font-bold text-slate-900">
-                    이렇게 진행돼요
-                </h2>
-                <p class="mt-3 text-base text-slate-600">
-                    단계별 안내에 따라 누구나 부담 없이 참여할 수 있습니다.
-                </p>
-            </div>
-            <ol class="grid gap-4 md:grid-cols-3" aria-label="테스트 단계">
-                <li class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold">1</span>
-                    <h3 class="mt-4 text-lg font-semibold text-slate-900">내 정보 입력</h3>
-                    <p class="mt-2 text-sm text-slate-600">표시명과 내 MBTI(있다면)를 정리해 초대 준비를 마칩니다.</p>
-                </li>
-                <li class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white font-semibold">2</span>
-                    <h3 class="mt-4 text-lg font-semibold text-slate-900">링크 공유</h3>
-                    <p class="mt-2 text-sm text-slate-600">친구·가족·직장·부부 등 관계를 선택해 1분 만에 응답을 받을 수 있어요.</p>
-                </li>
-                <li class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-semibold">3</span>
-                    <h3 class="mt-4 text-lg font-semibold text-slate-900">인사이트 확인</h3>
-                    <p class="mt-2 text-sm text-slate-600">응답 3명이 모이면 Self ↔ Others 관점 차이를 한눈에 비교할 수 있습니다.</p>
-                </li>
-            </ol>
-        </div>
-        <aside class="rounded-3xl bg-slate-900 text-white">
-            <div class="space-y-6 p-8">
-                <span class="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white/80">
-                    누구와 함께 이야기할까요?
-                </span>
-                <h3 class="text-2xl font-semibold">이런 관계와 나누면 인사이트가 선명해져요</h3>
-                <p class="text-sm leading-relaxed text-white/75">
-                    Self 테스트를 마친 뒤 아래 사람들에게 링크를 전송하면 서로의 관점을 비교하며 대화를 시작하기가 훨씬 수월합니다.
-                </p>
-                <ul class="grid gap-4 text-sm" aria-label="관계별 추천">
-                    <li class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div class="flex items-center gap-2 text-base font-semibold">
-                            <span aria-hidden="true">👥</span> 친구
-                        </div>
-                        <p class="mt-1 text-white/70">늘 솔직하게 이야기해 주는 친구에게 부탁하면 내가 놓친 강점이나 행동 습관을 자연스럽게 확인할 수 있어요.</p>
-                    </li>
-                    <li class="rounded-2xl border border-cyan-200/20 bg-cyan-400/10 p-4">
-                        <div class="flex items-center gap-2 text-base font-semibold">
-                            <span aria-hidden="true">💼</span> 동료
-                        </div>
-                        <p class="mt-1 text-white/70">협업 중인 동료의 응답은 일하는 방식과 커뮤니케이션 기대치를 맞추는 데 큰 도움이 됩니다.</p>
-                    </li>
-                    <li class="rounded-2xl border border-rose-200/20 bg-rose-400/10 p-4">
-                        <div class="flex items-center gap-2 text-base font-semibold">
-                            <span aria-hidden="true">💕</span> 연인·배우자
-                        </div>
-                        <p class="mt-1 text-white/70">가장 가까운 관계일수록 작은 차이를 크게 느낄 수 있어요. 관점 차이를 안전하게 정리해 보세요.</p>
-                    </li>
-                    <li class="rounded-2xl border border-amber-200/20 bg-amber-400/10 p-4">
-                        <div class="flex items-center gap-2 text-base font-semibold">
-                            <span aria-hidden="true">🏠</span> 가족
-                        </div>
-                        <p class="mt-1 text-white/70">부모님이나 형제자매와 비교하면 세대·라이프스타일에 따른 관점 차이를 이해하기 쉬워집니다.</p>
-                    </li>
-                    <li class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div class="flex items-center gap-2 text-base font-semibold">
-                            <span aria-hidden="true">🌱</span> 기타
-                        </div>
-                        <p class="mt-1 text-white/70">스터디, 멘토, 코치 등 다양한 관계의 응답을 모으면 전체 인사이트가 더욱 풍성해집니다.</p>
-                    </li>
-                </ul>
-                <a href="/mbti/share" class="focus-outline inline-flex items-center justify-center rounded-xl bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-white/90">
-                    🔗 지금 바로 초대 링크 만들기
-                </a>
+    <section aria-labelledby="flow" class="grid gap-6 md:grid-cols-3">
+        <article class="section-card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">step 01</p>
+            <h2 id="flow" class="mt-2 text-xl font-semibold text-[var(--ink)]">내 시선 기록</h2>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">자기 인식 문항에 답하며 현재의 나를 정리합니다. 이 값이 비교의 기준점이 됩니다.</p>
+        </article>
+        <article class="section-card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">step 02</p>
+            <h3 class="mt-2 text-xl font-semibold text-[var(--ink)]">관계별 응답 수집</h3>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">친구, 가족, 동료, 연인 등 관계를 선택해 링크를 보내면 타인의 시선을 모을 수 있습니다.</p>
+        </article>
+        <article class="section-card p-6">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">step 03</p>
+            <h3 class="mt-2 text-xl font-semibold text-[var(--ink)]">차이 해석과 대화</h3>
+            <p class="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">Self vs Others 차이를 보고, 서로 이해하기 위한 구체적인 대화 주제를 확인합니다.</p>
+        </article>
+    </section>
+
+    <section aria-labelledby="principles" class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <article class="section-card p-7 md:p-8">
+            <h2 id="principles" class="text-2xl font-semibold text-[var(--ink)]">우리가 지키는 원칙</h2>
+            <ul class="mt-5 space-y-3 text-sm leading-relaxed text-[var(--ink-soft)]">
+                <li><strong class="text-[var(--ink)]">비교의 목적:</strong> 평가가 아니라 이해를 늘리는 것</li>
+                <li><strong class="text-[var(--ink)]">공개 기준:</strong> 응답이 충분할 때만 집계 노출 (k>=3)</li>
+                <li><strong class="text-[var(--ink)]">관계 지속:</strong> 차이를 문제로 고정하지 않고 대화로 연결</li>
+                <li><strong class="text-[var(--ink)]">프라이버시:</strong> 링크 접근 기반 + noindex 정책 유지</li>
+            </ul>
+        </article>
+
+        <aside class="section-card p-7 md:p-8">
+            <h3 class="text-xl font-semibold text-[var(--ink)]">지금 시작할 흐름</h3>
+            <p class="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">먼저 내 시선을 작성한 뒤, 가장 자주 상호작용하는 사람 3명 이상에게 초대를 보내세요.</p>
+            <div class="mt-6 flex flex-col gap-3">
+                <a href="/mbti/self-test" class="focus-outline inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]">내 시선 먼저 작성</a>
+                <a href="/mbti/share" class="focus-outline inline-flex items-center justify-center rounded-xl border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-strong)]">초대 링크 생성</a>
             </div>
         </aside>
     </section>
 
-    <section aria-labelledby="section-features" class="space-y-8">
-        <header class="max-w-3xl">
-            <h2 id="section-features" class="text-3xl font-bold text-slate-900">왜 360Me MBTI인가요?</h2>
-            <p class="mt-3 text-base text-slate-600">
-                단순한 결과표보다 의미 있는 대화를 시작하도록 돕는 경험을 준비했어요. 함께 사용하면 이런 장점이 있어요.
-            </p>
-        </header>
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">👀 관점 차이를 한눈에</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    내 답변과 주변 시선을 나란히 보여 주어 서로의 생각 차이를 쉽게 발견할 수 있습니다.
-                </p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">🤝 대화가 쉬워져요</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    정리된 인사이트와 추천 질문이 대화를 자연스럽게 이어가도록 도와줍니다.
-                </p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">📬 초대와 공유가 간편해요</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    링크 하나로 친구나 동료에게 평가를 요청하고, 결과도 원하는 사람과만 나눌 수 있습니다.
-                </p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">⏱️ 짧은 시간 투자</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    5분 남짓이면 테스트가 끝나고, 바로 결과를 확인할 수 있어요.
-                </p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">📒 개인 노트 추가</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    느낀 점과 앞으로의 약속을 적어 두면 다음 만남에서 쉽게 돌아볼 수 있습니다.
-                </p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">🌱 성장 기록 유지</h3>
-                <p class="mt-2 text-sm text-slate-600">
-                    업데이트가 있을 때마다 이전 결과와 비교해 나의 변화를 확인할 수 있도록 설계했습니다.
-                </p>
-            </article>
-        </div>
-    </section>
-
     {% include "mbti/_preview_widget.html" %}
-
-    <section aria-labelledby="section-next" class="rounded-3xl bg-slate-900 px-6 py-12 text-white md:px-12">
-        <div class="mx-auto max-w-4xl text-center space-y-6">
-            <h2 id="section-next" class="text-3xl font-bold">지금 바로 시작해 보세요</h2>
-            <p class="text-base text-white/80">
-                내 정보를 입력하고 초대 링크를 만들어 친구·동료와 관점 차이를 이야기해 보세요. 익명 응답도 환영합니다.
-            </p>
-            <div class="flex flex-col gap-4 sm:flex-row sm:justify-center">
-                <a href="/mbti/share" class="focus-outline inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-black/30 transition hover:-translate-y-0.5">
-                    🔗 초대 링크 만들기
-                </a>
-                <a href="/mbti/self-test" class="focus-outline inline-flex items-center justify-center rounded-xl border border-white/60 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10">
-                    🧠 Self 테스트 먼저 하기
-                </a>
-            </div>
-        </div>
-    </section>
-    
 </div>
 {% endblock %}
 

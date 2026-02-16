@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MBTI & Arcade Web Service{% endblock %}</title>
+    <title>{% block title %}360Me{% endblock %}</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,78 +16,69 @@
     
     <!-- Google AdSense (나중에 추가) -->
     <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+
+    <style>
+        :root {
+            --bg: #f4f0ea;
+            --bg-strong: #e7ded2;
+            --surface: #fffdf9;
+            --ink: #1d1b19;
+            --ink-soft: #59524b;
+            --line: #d3c7b8;
+            --accent: #0f766e;
+            --accent-strong: #115e59;
+            --accent-soft: #ccfbf1;
+            --warm: #b45309;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 10% 10%, #efe6da 0%, transparent 38%),
+                radial-gradient(circle at 90% 0%, #d7ece7 0%, transparent 42%),
+                var(--bg);
+            color: var(--ink);
+        }
+
+        .shell {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .surface {
+            background: color-mix(in srgb, var(--surface) 94%, #ffffff 6%);
+            border: 1px solid var(--line);
+            box-shadow: 0 20px 45px -35px rgba(29, 27, 25, 0.45);
+        }
+
+        .focus-ring:focus-visible {
+            outline: 3px solid color-mix(in srgb, var(--accent) 80%, #ffffff 20%);
+            outline-offset: 3px;
+        }
+    </style>
     
     {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 min-h-screen">
+    <body class="min-h-screen antialiased">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg" x-data="{ mobileMenuOpen: false, dropdownOpen: false }">
-        <div class="max-w-7xl mx-auto px-4">
+    <nav class="sticky top-0 z-40 border-b border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_88%,white_12%)]/95 backdrop-blur" x-data="{ mobileMenuOpen: false }">
+        <div class="shell">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
-                        🎮 360me
-                    </a>
+                    <a href="/" class="focus-ring text-lg font-semibold tracking-tight text-[var(--ink)] transition-colors hover:text-[var(--accent)]">if i were you</a>
                 </div>
                 
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">홈</a>
-                    
-                    <!-- 검사 서비스 드롭다운 -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" 
-                                @click.away="open = false"
-                                class="text-gray-600 hover:text-blue-600 transition-colors flex items-center">
-                            🔍 검사 서비스
-                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        
-                        <div x-show="open" 
-                             x-transition:enter="transition ease-out duration-100"
-                             x-transition:enter-start="transform opacity-0 scale-95"
-                             x-transition:enter-end="transform opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-75"
-                             x-transition:leave-start="transform opacity-100 scale-100"
-                             x-transition:leave-end="transform opacity-0 scale-95"
-                             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                            <a href="/mbti" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                🧠 MBTI 성격 유형
-                            </a>
-                            <a href="/mbti/friend" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                👥 친구 MBTI 평가
-                            </a>
-                            <a href="{{ calculate_service_url }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                ➗ 수학 연산 연습
-                            </a>
-                            <div class="border-t border-gray-100 my-1"></div>
-                            <div class="px-4 py-2 text-xs text-gray-500">
-                                곧 추가될 예정:
-                            </div>
-                            <div class="px-4 py-1 text-xs text-gray-400 cursor-not-allowed">
-                                🔮 에니어그램
-                            </div>
-                            <div class="px-4 py-1 text-xs text-gray-400 cursor-not-allowed">
-                                💝 사랑의 언어
-                            </div>
-                            <div class="px-4 py-1 text-xs text-gray-400 cursor-not-allowed">
-                                🎯 스트레스 지수
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 미공개 게임 메뉴 자리표시자 -->
-                    <div class="text-gray-400 flex items-center text-sm">
-                        🎮 게임 (준비 중)
-                    </div>
+                    <a href="/" class="focus-ring text-sm font-medium text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">홈</a>
+                    <a href="/mbti/self-test" class="focus-ring text-sm font-medium text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">내 시선 작성</a>
+                    <a href="/mbti/share" class="focus-ring rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]">타인의 시선 초대</a>
                 </div>
                 
                 <!-- Mobile menu button -->
                 <div class="md:hidden flex items-center">
                     <button @click="mobileMenuOpen = !mobileMenuOpen" 
-                            class="text-gray-600 hover:text-blue-600 transition-colors">
+                            class="focus-ring text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -104,75 +95,51 @@
                  x-transition:leave="transition ease-in duration-75"
                  x-transition:leave-start="transform opacity-100 scale-100"
                  x-transition:leave-end="transform opacity-0 scale-95"
-                 class="md:hidden">
-                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
-                    <a href="/" class="block px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors">홈</a>
-                    
-                    <div class="px-3 py-2">
-                        <div class="text-sm font-medium text-gray-500 mb-2">🔍 검사 서비스</div>
-                        <div class="pl-4 space-y-1">
-                            <a href="/mbti" class="block py-1 text-sm text-gray-600 hover:text-blue-600 transition-colors">
-                                🧠 MBTI 성격 유형
-                            </a>
-                            <a href="/mbti/friend" class="block py-1 text-sm text-gray-600 hover:text-blue-600 transition-colors">
-                                👥 친구 MBTI 평가
-                            </a>
-                            <a href="{{ calculate_service_url }}" class="block py-1 text-sm text-gray-600 hover:text-blue-600 transition-colors">
-                                ➗ 수학 연산 연습
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="px-3 py-2">
-                        <div class="text-sm font-medium text-gray-400">🎮 게임 기능은 준비 중입니다</div>
-                    </div>
+                  class="md:hidden">
+                <div class="space-y-1 border-t border-[var(--line)] px-2 pt-2 pb-3 sm:px-3">
+                    <a href="/" class="focus-ring block rounded-lg px-3 py-2 text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-strong)] hover:text-[var(--accent)]">홈</a>
+                    <a href="/mbti/self-test" class="focus-ring block rounded-lg px-3 py-2 text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-strong)] hover:text-[var(--accent)]">내 시선 작성</a>
+                    <a href="/mbti/share" class="focus-ring block rounded-lg px-3 py-2 text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-strong)] hover:text-[var(--accent)]">타인의 시선 초대</a>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="shell py-8 md:py-10">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-8">
+    <footer class="mt-14 border-t border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_92%,white_8%)]">
+        <div class="shell py-10">
+            <div class="grid gap-8 md:grid-cols-4">
                 <div class="col-span-2">
-                    <h3 class="text-lg font-semibold mb-4">🎮 MBTI & Arcade Web Service</h3>
-                    <p class="text-gray-400 mb-4">
-                        다양한 심리 검사와 재미있는 아케이드 게임을 제공하는 웹 서비스입니다.
-                    </p>
+                    <h3 class="mb-3 text-lg font-semibold">if i were you</h3>
+                    <p class="mb-4 text-sm leading-relaxed text-[var(--ink-soft)]">내가 느끼는 나와 다른 사람이 느끼는 나의 차이를 안전하게 비교하고, 관계를 오래 이어가기 위한 대화를 돕습니다.</p>
                     <div class="flex space-x-4">
-                        <a href="/" class="text-gray-400 hover:text-white transition-colors">홈</a>
-                        <a href="/mbti" class="text-gray-400 hover:text-white transition-colors">MBTI</a>
-                        <a href="/calculate" class="text-gray-400 hover:text-white transition-colors">수학 연산</a>
-                        <span class="text-gray-500">게임(준비 중)</span>
+                        <a href="/" class="focus-ring text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">홈</a>
+                        <a href="/mbti/self-test" class="focus-ring text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">내 시선 작성</a>
+                        <a href="/mbti/share" class="focus-ring text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)]">초대 링크</a>
                     </div>
                 </div>
 
                 <div>
-                    <h4 class="text-md font-semibold mb-3">🔍 검사 서비스</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="/mbti" class="hover:text-white transition-colors">MBTI 성격 유형</a></li>
-                        <li><a href="/mbti/friend" class="hover:text-white transition-colors">친구 MBTI 평가</a></li>
-                        <li><a href="{{ calculate_service_url }}" class="hover:text-white transition-colors">수학 연산 연습</a></li>
-                        <li class="text-gray-500">에니어그램 (준비 중)</li>
-                        <li class="text-gray-500">사랑의 언어 (준비 중)</li>
+                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--warm)]">핵심 흐름</h4>
+                    <ul class="space-y-2 text-sm text-[var(--ink-soft)]">
+                        <li><a href="/mbti/self-test" class="focus-ring transition-colors hover:text-[var(--accent)]">1) 내가 느끼는 나</a></li>
+                        <li><a href="/mbti/share" class="focus-ring transition-colors hover:text-[var(--accent)]">2) 타인의 시선 수집</a></li>
                     </ul>
                 </div>
                 
                 <div>
-                    <h4 class="text-md font-semibold mb-3 text-gray-400">🎮 게임</h4>
-                    <p class="text-sm text-gray-500">새로운 게임 모드는 준비 중입니다.</p>
+                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--warm)]">가드레일</h4>
+                    <p class="text-sm leading-relaxed text-[var(--ink-soft)]">공유 링크는 `noindex`, 집계 결과는 k>=3 기준으로 공개됩니다.</p>
                 </div>
             </div>
             
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
-                <p>&copy; 2024 MBTI & Arcade Web Service. All rights reserved.</p>
-                <p class="mt-2 text-gray-400">MBTI 테스트와 재미있는 아케이드 게임을 즐겨보세요!</p>
+            <div class="mt-8 border-t border-[var(--line)] pt-6 text-center text-sm text-[var(--ink-soft)]">
+                <p>&copy; 2026 if i were you</p>
             </div>
         </div>
     </footer>
