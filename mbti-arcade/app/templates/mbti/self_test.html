@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}내 MBTI 테스트 - MBTI & Arcade Web Service{% endblock %}
+{% block title %}내 MBTI 테스트 - 360Me{% endblock %}
 
 {% block head %}
 <style>
@@ -50,6 +50,11 @@
                 응답은 익명으로 저장되며, 3명 이상이 함께 참여할 때까지 상세 비교는 잠겨 있어요.
                 진행 상황은 자동 저장되지 않으니, 잠깐의 집중으로 한 번에 마쳐보세요.
             </p>
+            <div class="mt-5">
+                <label for="owner_name" class="block text-sm font-medium text-slate-700">초대 링크에 표시할 내 이름</label>
+                <input id="owner_name" name="owner_name" maxlength="50" value="{{ request.query_params.get('owner_name', '') }}" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm focus-visible:ring-4 focus-visible:ring-indigo-200" placeholder="예: 민지">
+                <p class="mt-2 text-xs text-slate-500">비워두면 기본 이름(공유자)으로 표시됩니다.</p>
+            </div>
         </section>
 
         {% for question in questions %}
