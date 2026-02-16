@@ -29,11 +29,13 @@
 {% set default_friend_name = prefill_name or "친구" %}
 {% set default_friend_mbti = prefill_mbti or "" %}
 {% set relationship_options = [
+    ("coworker", "직장동료"),
     ("friend", "친구"),
+    ("lover", "연인"),
+    ("crush", "썸"),
+    ("spouse", "부부"),
+    ("sibling", "형제"),
     ("family", "가족"),
-    ("partner", "부부/커플"),
-    ("coworker", "직장"),
-    ("other", "기타"),
 ] %}
 
 <div class="mx-auto max-w-4xl space-y-10">

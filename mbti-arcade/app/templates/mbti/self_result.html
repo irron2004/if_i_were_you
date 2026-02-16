@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}내 MBTI 결과 - {{ mbti_type }} - MBTI & Arcade Web Service{% endblock %}
+{% block title %}내 MBTI 결과 - {{ mbti_type }} - 360Me{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -143,6 +143,17 @@
         </div>
     </div>
 
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-3">친구에게 검사 요청하기</h3>
+        <p class="text-sm text-gray-600 mb-4">아래 링크를 복사해서 공유하면, 상대가 관계를 고르고 나를 기준으로 MBTI 인식 평가를 진행할 수 있습니다.</p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+            <input id="shareLinkFromSelf" type="text" readonly value="{{ invite_url }}" class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-700">
+            <button type="button" id="copyShareLinkBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-lg transition duration-300">
+                링크 복사
+            </button>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="text-center space-y-4">
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -164,4 +175,45 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('shareLinkFromSelf');
+    const button = document.getElementById('copyShareLinkBtn');
+
+    if (!input || !button) {
+        return;
+    }
+
+    const setCopied = function () {
+        const before = button.textContent;
+        button.textContent = '복사 완료!';
+        setTimeout(function () {
+            button.textContent = before;
+        }, 1800);
+    };
+
+    button.addEventListener('click', function () {
+        const value = input.value || '';
+        if (!value) {
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(setCopied).catch(function () {
+                input.focus();
+                input.select();
+                if (document.execCommand('copy')) {
+                    setCopied();
+                }
+            });
+            return;
+        }
+
+        input.focus();
+        input.select();
+        if (document.execCommand('copy')) {
+            setCopied();
+        }
+    });
+});
+</script>
 {% endblock %} 

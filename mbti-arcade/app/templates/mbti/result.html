@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}MBTI 결과 - {{ mbti_type }} - MBTI & Arcade Web Service{% endblock %}
+{% block title %}MBTI 결과 - {{ mbti_type }} - 360Me{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -230,6 +230,48 @@
                 🧠 내 MBTI 테스트하기
             </a>
         </div>
+    </div>
+    {% endif %}
+
+    {% if report_meta %}
+    <div class="bg-white border border-slate-200 rounded-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold text-slate-800 mb-3">원래 MBTI vs 검사자 평가 MBTI 비교</h3>
+        <div class="grid gap-4 md:grid-cols-2 mb-4">
+            <div class="rounded-lg border border-slate-200 p-4 bg-slate-50">
+                <p class="text-sm text-slate-600">공유한 사람의 원래 MBTI</p>
+                <p class="text-2xl font-bold text-slate-900">{{ report_meta.owner_mbti or '미입력' }}</p>
+            </div>
+            <div class="rounded-lg border border-indigo-200 p-4 bg-indigo-50">
+                <p class="text-sm text-indigo-700">검사자가 본 MBTI</p>
+                <p class="text-2xl font-bold text-indigo-900">{{ report_meta.evaluator_mbti }}</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-600">누적 응답 {{ report_meta.respondent_count }}건{% if not report_meta.unlocked %} (3건 이상부터 관계별 상세 리포트 공개){% endif %}</p>
+    </div>
+    {% endif %}
+
+    {% if relation_summary %}
+    <div class="bg-white border border-slate-200 rounded-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold text-slate-800 mb-3">관계별 인식 누적 요약</h3>
+        <div class="space-y-3">
+            {% for item in relation_summary %}
+            <div class="rounded-lg border border-slate-200 p-4 bg-slate-50">
+                <p class="font-semibold text-slate-800">{{ item.relation }} · 응답 {{ item.respondent_count }}건</p>
+                {% if item.top_type %}
+                <p class="text-sm text-slate-600 mt-1">대표 인식 MBTI: <strong>{{ item.top_type }}</strong> · PGI {{ item.pgi }}</p>
+                {% else %}
+                <p class="text-sm text-slate-500 mt-1">응답이 더 모이면 대표 인식 MBTI와 괴리 지수가 공개됩니다.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if burnout_signal %}
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-8">
+        <h3 class="text-lg font-semibold text-amber-800 mb-2">지침/번아웃 신호 점검</h3>
+        <p class="text-sm text-amber-700">{{ burnout_signal }}</p>
     </div>
     {% endif %}
 

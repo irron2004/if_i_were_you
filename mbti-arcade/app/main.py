@@ -32,7 +32,9 @@ except ImportError:  # pragma: no cover - fallback for older Starlette versions
                 if scheme:
                     request.scope["scheme"] = scheme
 
-            forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+            forwarded_host = request.headers.get(
+                "x-forwarded-host"
+            ) or request.headers.get("host")
             if forwarded_host:
                 host_value = forwarded_host.split(",")[0].strip()
                 if host_value:
@@ -77,7 +79,10 @@ class ProblemDetailsTrustedHostMiddleware:
         self.www_redirect = www_redirect
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self.allow_any or scope["type"] not in {"http", "websocket"}:  # pragma: no cover
+        if self.allow_any or scope["type"] not in {
+            "http",
+            "websocket",
+        }:  # pragma: no cover
             await self.app(scope, receive, send)
             return
 
@@ -86,7 +91,9 @@ class ProblemDetailsTrustedHostMiddleware:
         is_valid_host = False
         found_www_redirect = False
         for pattern in self.allowed_hosts:
-            if host == pattern or (pattern.startswith("*") and host.endswith(pattern[1:])):
+            if host == pattern or (
+                pattern.startswith("*") and host.endswith(pattern[1:])
+            ):
                 is_valid_host = True
                 break
             if f"www.{host}" == pattern:
@@ -113,8 +120,14 @@ class ProblemDetailsTrustedHostMiddleware:
         )
         await response(scope, receive, send)
 
+
 from app import settings
-from app.core.config import REQUEST_ID_HEADER
+from app.core.config import (
+    REQUEST_ID_HEADER,
+    compute_expiry,
+    generate_invite_token,
+    generate_session_id,
+)
 from app.core.db import get_session as get_core_session
 from app.data.loader import seed_questions
 from app.data.questionnaire_loader import get_question_lookup
@@ -143,9 +156,16 @@ from app.utils.problem_details import (
     internal_server_error,
     problem_response,
 )
-from app.models import Session as SessionModel, Participant, ParticipantRelation
+from app.models import (
+    OtherResponse,
+    Participant,
+    ParticipantAnswer,
+    ParticipantRelation,
+    Session as SessionModel,
+)
 from app.utils.privacy import apply_noindex_headers, NOINDEX_VALUE
 from app.schemas import DIMENSIONS, ParticipantRegistrationRequest
+from app.services.aggregator import recalculate_relation_aggregates
 from app.services.scoring import compute_norms, norm_to_radar
 from app.routers.participants import register_participant
 
@@ -164,14 +184,6 @@ app = FastAPI(
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-_calculate_base_url = settings.CALCULATE_SERVICE_BASE_URL or "/"
-if _calculate_base_url != "/":
-    _calculate_base_url = _calculate_base_url.rstrip("/")
-templates.env.globals.setdefault("calculate_service_url", _calculate_base_url)
-templates.env.globals.setdefault(
-    "calculate_service_problems_url",
-    f"{_calculate_base_url}/problems" if _calculate_base_url != "/" else "/problems",
-)
 
 RELATION_LABELS: dict[str, str] = {
     "friend": "친구",
@@ -179,6 +191,22 @@ RELATION_LABELS: dict[str, str] = {
     "partner": "부부/커플",
     "coworker": "직장",
     "other": "기타",
+    "lover": "연인",
+    "crush": "썸",
+    "spouse": "부부",
+    "sibling": "형제",
+}
+
+RELATION_CANONICAL: dict[str, str] = {
+    "friend": "friend",
+    "coworker": "coworker",
+    "lover": "partner",
+    "crush": "partner",
+    "spouse": "partner",
+    "sibling": "family",
+    "family": "family",
+    "partner": "partner",
+    "other": "other",
 }
 
 
@@ -191,7 +219,7 @@ def _escape_js(value: object) -> str:
         "\n": "\\n",
         "\r": "\\r",
         "\t": "\\t",
-        "\'": "\\'",
+        "'": "\\'",
         '"': '\\"',
         "</": "<" + "\\/",
         "\u2028": "\\u2028",
@@ -221,7 +249,6 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 def _build_questions(mode: str, *, perspective: str) -> list[dict[str, object]]:
-
     prompt_key = "prompt_other" if perspective == "other" else "prompt_self"
     questions = []
     for raw in questions_for_mode(mode):
@@ -244,8 +271,7 @@ def _build_questions(mode: str, *, perspective: str) -> list[dict[str, object]]:
 
 _QUESTION_LOOKUP = get_question_lookup()
 _QUESTION_DIM_SIGN: Dict[int, Tuple[str, int]] = {
-    question_id: (seed.dim, seed.sign)
-    for question_id, seed in _QUESTION_LOOKUP.items()
+    question_id: (seed.dim, seed.sign) for question_id, seed in _QUESTION_LOOKUP.items()
 }
 _DIMENSION_LETTERS: Dict[str, Tuple[str, str]] = {
     "EI": ("E", "I"),
@@ -256,22 +282,70 @@ _DIMENSION_LETTERS: Dict[str, Tuple[str, str]] = {
 
 
 MBTI_SUMMARIES: Dict[str, Dict[str, str]] = {
-    "ISTJ": {"title": "Logistician", "description": "Calm planners who value duty and precise execution."},
-    "ISFJ": {"title": "Defender", "description": "Supportive caretakers focused on stability and trust."},
-    "INFJ": {"title": "Advocate", "description": "Idealistic advisors driven by values and long-term vision."},
-    "INTJ": {"title": "Architect", "description": "Independent strategists who map bold plans logically."},
-    "ISTP": {"title": "Virtuoso", "description": "Adaptable troubleshooters who master hands-on challenges."},
-    "ISFP": {"title": "Adventurer", "description": "Curious creators chasing experiences and personal freedom."},
-    "INFP": {"title": "Mediator", "description": "Empathetic dreamers guided by meaning and authenticity."},
-    "INTP": {"title": "Logician", "description": "Analytical theorists eager to explain complex systems."},
-    "ESTP": {"title": "Entrepreneur", "description": "Energetic realists who improvise and seize opportunities."},
-    "ESFP": {"title": "Entertainer", "description": "Expressive performers who energize any room."},
-    "ENFP": {"title": "Campaigner", "description": "Enthusiastic explorers who inspire with big ideas."},
-    "ENTP": {"title": "Debater", "description": "Inventive arguers who challenge limits and assumptions."},
-    "ESTJ": {"title": "Executive", "description": "Organized directors who drive progress with clarity."},
-    "ESFJ": {"title": "Consul", "description": "Community builders who nurture harmony and tradition."},
-    "ENFJ": {"title": "Protagonist", "description": "Persuasive mentors rallying teams around shared goals."},
-    "ENTJ": {"title": "Commander", "description": "Decisive leaders who align people behind ambitious targets."},
+    "ISTJ": {
+        "title": "Logistician",
+        "description": "Calm planners who value duty and precise execution.",
+    },
+    "ISFJ": {
+        "title": "Defender",
+        "description": "Supportive caretakers focused on stability and trust.",
+    },
+    "INFJ": {
+        "title": "Advocate",
+        "description": "Idealistic advisors driven by values and long-term vision.",
+    },
+    "INTJ": {
+        "title": "Architect",
+        "description": "Independent strategists who map bold plans logically.",
+    },
+    "ISTP": {
+        "title": "Virtuoso",
+        "description": "Adaptable troubleshooters who master hands-on challenges.",
+    },
+    "ISFP": {
+        "title": "Adventurer",
+        "description": "Curious creators chasing experiences and personal freedom.",
+    },
+    "INFP": {
+        "title": "Mediator",
+        "description": "Empathetic dreamers guided by meaning and authenticity.",
+    },
+    "INTP": {
+        "title": "Logician",
+        "description": "Analytical theorists eager to explain complex systems.",
+    },
+    "ESTP": {
+        "title": "Entrepreneur",
+        "description": "Energetic realists who improvise and seize opportunities.",
+    },
+    "ESFP": {
+        "title": "Entertainer",
+        "description": "Expressive performers who energize any room.",
+    },
+    "ENFP": {
+        "title": "Campaigner",
+        "description": "Enthusiastic explorers who inspire with big ideas.",
+    },
+    "ENTP": {
+        "title": "Debater",
+        "description": "Inventive arguers who challenge limits and assumptions.",
+    },
+    "ESTJ": {
+        "title": "Executive",
+        "description": "Organized directors who drive progress with clarity.",
+    },
+    "ESFJ": {
+        "title": "Consul",
+        "description": "Community builders who nurture harmony and tradition.",
+    },
+    "ENFJ": {
+        "title": "Protagonist",
+        "description": "Persuasive mentors rallying teams around shared goals.",
+    },
+    "ENTJ": {
+        "title": "Commander",
+        "description": "Decisive leaders who align people behind ambitious targets.",
+    },
 }
 
 _DEFAULT_SUMMARY = {
@@ -280,7 +354,9 @@ _DEFAULT_SUMMARY = {
 }
 
 
-def _score_answers(answer_pairs: Iterable[tuple[int, int]]) -> tuple[str, Dict[str, int], Dict[str, float]]:
+def _score_answers(
+    answer_pairs: Iterable[tuple[int, int]],
+) -> tuple[str, Dict[str, int], Dict[str, float]]:
     normalized_pairs = list(answer_pairs)
     if not normalized_pairs:
         raise ValueError("No answers submitted")
@@ -304,6 +380,7 @@ def _score_answers(answer_pairs: Iterable[tuple[int, int]]) -> tuple[str, Dict[s
 
     mbti_type = "".join(letters)
     return mbti_type, scores, radar
+
 
 app.include_router(health.router)
 app.include_router(sessions_router.router)
@@ -449,14 +526,19 @@ async def startup_event():
 async def root(request: Request):
     return templates.TemplateResponse("mbti/index.html", {"request": request})
 
+
 @app.get("/mbti", response_class=HTMLResponse)
 async def mbti_landing(request: Request):
     return templates.TemplateResponse("mbti/index.html", {"request": request})
 
+
 @app.get("/mbti/self-test", response_class=HTMLResponse)
 async def mbti_self_test(request: Request):
     questions = _build_questions("basic", perspective="self")
-    return templates.TemplateResponse("mbti/self_test.html", {"request": request, "questions": questions})
+    return templates.TemplateResponse(
+        "mbti/self_test.html", {"request": request, "questions": questions}
+    )
+
 
 @app.get("/mbti/friend", response_class=HTMLResponse)
 async def mbti_friend(
@@ -485,10 +567,13 @@ async def submit_friend(request: Request):
     invite_token = (form.get("invite_token") or "").strip()
     friend_name = (form.get("friend_name") or "").strip() or "친구"
     friend_mbti = (form.get("friend_mbti") or "").strip()
-    relation_value = (form.get("relationship") or "").strip()
+    relation_value_raw = (form.get("relationship") or "").strip()
+    relation_value = RELATION_CANONICAL.get(relation_value_raw, relation_value_raw)
     responder_name = (form.get("responder_name") or "").strip()
 
-    relation_label = RELATION_LABELS.get(relation_value, relation_value or "")
+    relation_label = RELATION_LABELS.get(
+        relation_value_raw, RELATION_LABELS.get(relation_value, relation_value or "")
+    )
 
     registration = None
     if invite_token:
@@ -496,12 +581,14 @@ async def submit_friend(request: Request):
             raise HTTPException(status_code=400, detail="관계를 선택해 주세요.")
 
         try:
-            ParticipantRelation(relation_value)
+            relation_enum = ParticipantRelation(relation_value)
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail="지원하지 않는 관계입니다.") from exc
+            raise HTTPException(
+                status_code=422, detail="지원하지 않는 관계입니다."
+            ) from exc
 
         registration_payload = ParticipantRegistrationRequest(
-            relation=relation_value,
+            relation=relation_enum,
             display_name=responder_name or None,
             consent_display=False,
         )
@@ -577,7 +664,9 @@ async def mbti_self_result(request: Request):
             question_id = int(key[1:])
             answer_value = int(value)
         except (ValueError, TypeError) as exc:
-            raise HTTPException(status_code=400, detail="Invalid answer payload") from exc
+            raise HTTPException(
+                status_code=400, detail="Invalid answer payload"
+            ) from exc
         answer_pairs.append((question_id, answer_value))
 
     try:
@@ -587,6 +676,23 @@ async def mbti_self_result(request: Request):
 
     result = MBTI_SUMMARIES.get(mbti_type, _DEFAULT_SUMMARY)
 
+    with session_scope() as db:
+        session = SessionModel(
+            id=generate_session_id(),
+            owner_id=None,
+            mode="friend",
+            invite_token=generate_invite_token(),
+            is_anonymous=True,
+            expires_at=compute_expiry(72),
+            max_raters=50,
+            self_mbti=mbti_type,
+            snapshot_owner_name="공유자",
+        )
+        db.add(session)
+        invite_token = session.invite_token
+
+    invite_url = build_invite_url(request, invite_token)
+
     response = templates.TemplateResponse(
         "mbti/self_result.html",
         {
@@ -594,6 +700,7 @@ async def mbti_self_result(request: Request):
             "mbti_type": mbti_type,
             "scores": scores,
             "result": result,
+            "invite_url": invite_url,
             "robots_meta": NOINDEX_VALUE,
         },
     )
@@ -612,7 +719,9 @@ async def mbti_result(request: Request):
             question_id = int(key[1:])
             answer_value = int(value)
         except (ValueError, TypeError) as exc:
-            raise HTTPException(status_code=400, detail="Invalid answer payload") from exc
+            raise HTTPException(
+                status_code=400, detail="Invalid answer payload"
+            ) from exc
         answer_pairs.append((question_id, answer_value))
 
     try:
@@ -624,8 +733,105 @@ async def mbti_result(request: Request):
 
     friend_name = (form.get("friend_name") or "").strip()
     friend_relationship = (form.get("relationship") or "").strip()
+    friend_relation_label = (form.get("relation_label") or "").strip()
     responder_name = (form.get("responder_name") or "").strip()
     friend_mbti = (form.get("friend_mbti") or "").strip()
+    invite_token = (form.get("invite_token") or "").strip()
+    participant_id_raw = (form.get("participant_id") or "").strip()
+    participant_id = int(participant_id_raw) if participant_id_raw.isdigit() else None
+
+    relation_summary = []
+    report_meta = None
+    burnout_signal = None
+    canonical_relation = RELATION_CANONICAL.get(
+        friend_relationship, friend_relationship
+    )
+    relation_label = friend_relation_label or RELATION_LABELS.get(
+        friend_relationship, RELATION_LABELS.get(canonical_relation, canonical_relation)
+    )
+
+    if participant_id and invite_token:
+        with session_scope() as db:
+            participant = db.get(Participant, participant_id)
+            if participant and participant.invite_token == invite_token:
+                session_record = db.get(SessionModel, participant.session_id)
+                if session_record is not None:
+                    rater_hash = f"participant:{participant.id}"
+                    db.query(ParticipantAnswer).filter(
+                        ParticipantAnswer.participant_id == participant.id
+                    ).delete()
+                    db.query(OtherResponse).filter(
+                        OtherResponse.session_id == session_record.id,
+                        OtherResponse.rater_hash == rater_hash,
+                    ).delete()
+
+                    for question_id, answer_value in answer_pairs:
+                        db.add(
+                            ParticipantAnswer(
+                                participant_id=participant.id,
+                                question_id=question_id,
+                                value=answer_value,
+                            )
+                        )
+                        db.add(
+                            OtherResponse(
+                                session_id=session_record.id,
+                                rater_hash=rater_hash,
+                                participant_id=participant.id,
+                                question_id=question_id,
+                                value=answer_value,
+                                relation_tag=participant.relation.value,
+                            )
+                        )
+
+                    norms = compute_norms(answer_pairs, _QUESTION_DIM_SIGN)
+                    now = datetime.now(timezone.utc)
+                    participant.axes_payload = {
+                        dim: round(norms.get(dim, 0.0), 6) for dim in DIMENSIONS
+                    }
+                    participant.perceived_type = mbti_type
+                    participant.answers_submitted_at = now
+                    participant.computed_at = now
+
+                    summary = recalculate_relation_aggregates(session_record.id, db)
+                    unlocked = summary.total_respondents >= 3
+                    relation_summary = [
+                        {
+                            "relation": RELATION_LABELS.get(
+                                item.relation.value, item.relation.value
+                            ),
+                            "respondent_count": item.respondent_count,
+                            "top_type": item.top_type if unlocked else None,
+                            "pgi": round(item.pgi, 2)
+                            if unlocked and item.pgi is not None
+                            else None,
+                        }
+                        for item in summary.relations
+                    ]
+
+                    visible_pgi = [
+                        item["pgi"]
+                        for item in relation_summary
+                        if item.get("pgi") is not None
+                    ]
+                    if visible_pgi:
+                        avg_pgi = sum(visible_pgi) / len(visible_pgi)
+                        if avg_pgi >= 60:
+                            burnout_signal = "관계별 인식 격차가 높아 지침/번아웃 위험 신호가 있습니다. 휴식과 경계 설정 대화를 권장합니다."
+                        elif avg_pgi >= 40:
+                            burnout_signal = "관계별 인식 격차가 누적되고 있어 피로 신호를 점검해 보는 것이 좋습니다."
+                        else:
+                            burnout_signal = "현재는 큰 소진 신호가 보이지 않지만, 주기적으로 인식 차이를 점검해 보세요."
+
+                    report_meta = {
+                        "owner_name": session_record.snapshot_owner_name
+                        or friend_name
+                        or "공유자",
+                        "owner_mbti": friend_mbti or session_record.self_mbti,
+                        "evaluator_mbti": mbti_type,
+                        "respondent_count": summary.total_respondents,
+                        "unlocked": unlocked,
+                    }
 
     response = templates.TemplateResponse(
         "mbti/result.html",
@@ -637,9 +843,12 @@ async def mbti_result(request: Request):
             "pair_token": None,
             "robots_meta": NOINDEX_VALUE,
             "friend_name": friend_name or None,
-            "friend_relationship": friend_relationship or None,
+            "friend_relationship": relation_label or None,
             "responder_name": responder_name or None,
             "friend_mbti": friend_mbti or None,
+            "report_meta": report_meta,
+            "relation_summary": relation_summary,
+            "burnout_signal": burnout_signal,
         },
     )
     apply_noindex_headers(response)
@@ -651,18 +860,20 @@ async def mbti_friend_result(request: Request, token: str):
     """친구 테스트 결과 제출 (토큰 기반)"""
     try:
         from app.core.token import verify_token
+
         pair_id, my_mbti = verify_token(token)
     except ValueError:
         raise HTTPException(status_code=403, detail="Invalid or expired token")
-    
+
     # 데이터베이스에서 친구 정보 가져오기
     from app.core.db import get_session
     from app.core.models_db import Pair
+
     session = next(get_session())
     pair = session.get(Pair, pair_id)
     if not pair:
         raise HTTPException(status_code=404, detail="Pair not found")
-    
+
     form = await request.form()
     answer_pairs = []
     for key, value in form.items():
@@ -672,7 +883,9 @@ async def mbti_friend_result(request: Request, token: str):
             question_id = int(key[1:])
             answer_value = int(value)
         except (ValueError, TypeError) as exc:
-            raise HTTPException(status_code=400, detail="Invalid answer payload") from exc
+            raise HTTPException(
+                status_code=400, detail="Invalid answer payload"
+            ) from exc
         answer_pairs.append((question_id, answer_value))
 
     try:
@@ -695,9 +908,7 @@ async def mbti_friend_result(request: Request, token: str):
     statistics = {
         "total_evaluations": 1,
         "average_score": 50.0,
-        "mbti_distribution": {
-            mbti_type: 1
-        },
+        "mbti_distribution": {mbti_type: 1},
         "average_scores": {
             "E": scores.get("E", 50),
             "I": scores.get("I", 50),
@@ -706,8 +917,8 @@ async def mbti_friend_result(request: Request, token: str):
             "T": scores.get("T", 50),
             "F": scores.get("F", 50),
             "J": scores.get("J", 50),
-            "P": scores.get("P", 50)
-        }
+            "P": scores.get("P", 50),
+        },
     }
 
     invite_url = build_invite_url(request, token)
@@ -795,9 +1006,7 @@ def invite_public(
     db: OrmSession = Depends(get_db),
 ):
     session_record = (
-        db.query(SessionModel)
-        .filter(SessionModel.invite_token == token)
-        .one_or_none()
+        db.query(SessionModel).filter(SessionModel.invite_token == token).one_or_none()
     )
 
     if session_record is not None:
@@ -845,6 +1054,7 @@ def invite_public(
         return response
 
     return quiz_router.render_invite_page(request, token, session)
+
 
 @app.get("/api", tags=["system"])
 async def api_root():
