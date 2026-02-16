@@ -1081,6 +1081,11 @@ def invite_public(
     return quiz_router.render_invite_page(request, token, session)
 
 
+@app.post("/i/{token}", response_class=HTMLResponse)
+async def invite_public_submit(token: str, request: Request):
+    return await submit_friend(request)
+
+
 @app.get("/api", tags=["system"])
 async def api_root():
     return {"service": "perception-gap", "status": "online"}
