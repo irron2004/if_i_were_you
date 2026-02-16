@@ -54,7 +54,7 @@
 
         {% for question in questions %}
         <div class="mb-8 p-6 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+            <h3 class="mb-4 text-lg font-semibold leading-relaxed text-gray-800 break-words">
                 {{ loop.index }}. 
                 {% if friend_info %}
                     {% set question_text = question.question %}
@@ -72,27 +72,27 @@
             <div class="space-y-3">
                 <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors">
                     <input type="radio" name="q{{ question.id }}" value="1" class="mr-3 text-blue-600" required>
-                    <span class="text-gray-700">전혀 그렇지 않다</span>
+                    <span class="min-w-0 break-words leading-snug text-gray-700">전혀 그렇지 않다</span>
                 </label>
                 
                 <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors">
                     <input type="radio" name="q{{ question.id }}" value="2" class="mr-3 text-blue-600" required>
-                    <span class="text-gray-700">그렇지 않은 편이다</span>
+                    <span class="min-w-0 break-words leading-snug text-gray-700">그렇지 않은 편이다</span>
                 </label>
                 
                 <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors">
                     <input type="radio" name="q{{ question.id }}" value="3" class="mr-3 text-blue-600" required>
-                    <span class="text-gray-700">보통이다</span>
+                    <span class="min-w-0 break-words leading-snug text-gray-700">보통이다</span>
                 </label>
                 
                 <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors">
                     <input type="radio" name="q{{ question.id }}" value="4" class="mr-3 text-blue-600" required>
-                    <span class="text-gray-700">그런 편이다</span>
+                    <span class="min-w-0 break-words leading-snug text-gray-700">그런 편이다</span>
                 </label>
                 
                 <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors">
                     <input type="radio" name="q{{ question.id }}" value="5" class="mr-3 text-blue-600" required>
-                    <span class="text-gray-700">매우 그렇다</span>
+                    <span class="min-w-0 break-words leading-snug text-gray-700">매우 그렇다</span>
                 </label>
             </div>
         </div>
