@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from email.utils import formatdate
 from http import HTTPStatus
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Mapping, Tuple
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -129,9 +129,10 @@ from app.core.config import (
     generate_session_id,
 )
 from app.core.db import get_session as get_core_session
+from app.core.db import init_db as init_core_db
 from app.data.loader import seed_questions
 from app.data.questionnaire_loader import get_question_lookup
-from app.data.questions import questions_for_mode
+from app.data.questions import questions_for_mode, select_invite_other_questions
 from app.database import Base, engine, session_scope, get_db
 from app.routers import health
 from app.routers import couple as couple_router
@@ -258,8 +259,11 @@ except ImportError:  # pragma: no cover - optional dependency
 
 def _build_questions(mode: str, *, perspective: str) -> list[dict[str, object]]:
     prompt_key = "prompt_other" if perspective == "other" else "prompt_self"
+    raw_questions = questions_for_mode(mode)
+    if perspective == "other":
+        raw_questions = select_invite_other_questions(mode, raw_questions)
     questions = []
-    for raw in questions_for_mode(mode):
+    for raw in raw_questions:
         prompt = raw.get(prompt_key)
         if not prompt:
             continue
@@ -530,6 +534,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
+    init_core_db()
     Base.metadata.create_all(bind=engine)
     with session_scope() as db:
         seed_questions(db)
@@ -576,13 +581,23 @@ async def mbti_friend(
 @app.post("/mbti/friend", response_class=HTMLResponse)
 async def submit_friend(request: Request):
     form = await request.form()
+    return await _submit_friend_from_form(request, form)
 
-    invite_token = (form.get("invite_token") or "").strip()
-    friend_name = (form.get("friend_name") or "").strip() or "친구"
-    friend_mbti = (form.get("friend_mbti") or "").strip()
-    relation_value_raw = (form.get("relationship") or "").strip()
+
+async def _submit_friend_from_form(
+    request: Request,
+    form: Mapping[str, Any],
+) -> HTMLResponse:
+    def _form_text(key: str) -> str:
+        value = form.get(key)
+        return value.strip() if isinstance(value, str) else ""
+
+    invite_token = _form_text("invite_token")
+    friend_name = _form_text("friend_name") or "친구"
+    friend_mbti = _form_text("friend_mbti")
+    relation_value_raw = _form_text("relationship")
     relation_value = RELATION_CANONICAL.get(relation_value_raw, relation_value_raw)
-    responder_name = (form.get("responder_name") or "").strip()
+    responder_name = _form_text("responder_name")
 
     relation_label = RELATION_LABELS.get(
         relation_value_raw, RELATION_LABELS.get(relation_value, relation_value or "")
@@ -1083,7 +1098,15 @@ def invite_public(
 
 @app.post("/i/{token}", response_class=HTMLResponse)
 async def invite_public_submit(token: str, request: Request):
-    return await submit_friend(request)
+    form = await request.form()
+    posted_token = form.get("invite_token")
+    posted_token = posted_token.strip() if isinstance(posted_token, str) else ""
+    if posted_token and posted_token != token:
+        raise HTTPException(status_code=400, detail="Invite token mismatch")
+
+    normalized_form = dict(form)
+    normalized_form["invite_token"] = token
+    return await _submit_friend_from_form(request, normalized_form)
 
 
 @app.get("/api", tags=["system"])

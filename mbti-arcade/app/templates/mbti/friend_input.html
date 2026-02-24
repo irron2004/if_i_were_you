@@ -68,7 +68,8 @@
     </section>
 
     <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
-        <form method="POST" action="{{ request.url_for('submit_friend') }}" class="space-y-6">
+        {% set submit_action = request.url_for('invite_public', token=invite_token) if invite_token else request.url_for('submit_friend') %}
+        <form method="POST" action="{{ submit_action }}" class="space-y-6">
             {% if invite_token %}
             <input type="hidden" name="invite_token" value="{{ invite_token }}">
             {% endif %}
