@@ -4,7 +4,7 @@ from urllib.parse import parse_qs, urlparse
 def test_share_redirect_is_valid_url(client):
     response = client.post(
         "/share",
-        data={"name": "테스트", "email": "test@example.com", "my_mbti": "INTJ"},
+        data={"display_name": "테스트", "mbti_value": "INTJ"},
         follow_redirects=False,
     )
     assert response.status_code in {200, 302, 303}

@@ -2,7 +2,9 @@ from urllib.parse import parse_qs, urlparse
 
 
 def test_allowed_host_passes(client):
-    response = client.get("http://webservice-production-c039.up.railway.app/mbti/friend")
+    response = client.get(
+        "http://webservice-production-c039.up.railway.app/mbti/friend"
+    )
     assert response.status_code == 200
 
 
@@ -13,9 +15,8 @@ def test_unallowed_host_blocked(client):
 
 def test_share_link_canonicalizes_to_https(client):
     payload = {
-        "name": "테스트",
-        "email": "user@example.com",
-        "my_mbti": "INTJ",
+        "display_name": "테스트",
+        "mbti_value": "INTJ",
     }
 
     response = client.post(
