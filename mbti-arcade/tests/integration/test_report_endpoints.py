@@ -12,7 +12,7 @@ def _create_session(client) -> dict:
 
 
 def _submit_self(client, session_id: str) -> None:
-    answers = build_fake_answers()
+    answers = build_fake_answers(mode="friend")
     response = client.post(
         "/api/self/submit",
         json={"session_id": session_id, "answers": answers},
@@ -30,7 +30,7 @@ def _register_participant(client, invite_token: str) -> dict:
 
 
 def _submit_answers(client, participant_id: int):
-    answers = build_fake_answers()
+    answers = build_fake_answers(mode="friend")
     response = client.post(
         f"/v1/answers/{participant_id}",
         json={"answers": answers},
@@ -55,8 +55,9 @@ def test_participant_report_success(client):
     assert body["participant_type"]
     assert body["respondent_count"] == 1
     assert len(body["diff_axes"]) == 4
-    assert all(axis["dimension"] in ("EI", "SN", "TF", "JP") for axis in body["diff_axes"]) \
-        , "Unexpected dimension in diff axes"
+    assert all(
+        axis["dimension"] in ("EI", "SN", "TF", "JP") for axis in body["diff_axes"]
+    ), "Unexpected dimension in diff axes"
 
 
 def test_participant_report_requires_answers(client):

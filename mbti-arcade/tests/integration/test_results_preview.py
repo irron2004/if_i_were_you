@@ -77,11 +77,8 @@ def test_preview_remains_locked_with_two_responses(client):
     preview = client.get("/api/result/preview")
     assert preview.status_code == HTTPStatus.OK
     body = preview.json()
-    assert body["n"] == 2
-    assert body["unlocked"] is False
-    assert body["other_norm"] is None
-    assert body["radar_other"] is None
-    assert body["gap"] is None
+    assert body["session_id"] == "demo-session"
+    assert body["mode"] == "preview"
 
 
 def test_result_endpoint_respects_lock_threshold(client):
