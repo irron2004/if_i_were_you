@@ -62,7 +62,9 @@ class OwnerProfile(Base, TimestampMixin):
     owner_key: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(512))
-    mbti_source: Mapped[str] = mapped_column(String(20), default="input", nullable=False)
+    mbti_source: Mapped[str] = mapped_column(
+        String(20), default="input", nullable=False
+    )
     mbti_value: Mapped[str | None] = mapped_column(String(4))
     show_public: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
@@ -74,8 +76,13 @@ class Session(Base, TimestampMixin):
     owner_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"))
     mode: Mapped[str] = mapped_column(String(20), nullable=False)
     invite_token: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    owner_token_hash: Mapped[str | None] = mapped_column(
+        String(64), unique=True, nullable=True
+    )
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     max_raters: Mapped[int] = mapped_column(Integer, default=50)
     self_mbti: Mapped[str | None] = mapped_column(String(4))
     snapshot_owner_name: Mapped[str | None] = mapped_column(String(120))
@@ -195,10 +202,14 @@ class Participant(Base, TimestampMixin):
         nullable=False,
     )
     display_name: Mapped[str | None] = mapped_column(String(120))
-    consent_display: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    consent_display: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     perceived_type: Mapped[str | None] = mapped_column(String(4))
     axes_payload: Mapped[dict[str, float] | None] = mapped_column(JSON)
-    answers_submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    answers_submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     session: Mapped[Session] = relationship(back_populates="participants")

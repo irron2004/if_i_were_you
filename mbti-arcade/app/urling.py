@@ -6,6 +6,7 @@ from starlette.datastructures import URL
 from app import settings
 
 INVITE_ROUTE_NAME = "invite_public"
+OWNER_EXCHANGE_ROUTE_NAME = "owner_exchange"
 
 
 def canonicalize(url: URL) -> URL:
@@ -32,3 +33,7 @@ def build_invite_url(request: Request, token: str) -> str:
     invite_url = request.url_for(INVITE_ROUTE_NAME, token=token)
     return str(canonicalize(URL(str(invite_url))))
 
+
+def build_owner_exchange_url(request: Request, owner_token: str) -> str:
+    owner_url = request.url_for(OWNER_EXCHANGE_ROUTE_NAME, owner_token=owner_token)
+    return str(canonicalize(URL(str(owner_url))))
