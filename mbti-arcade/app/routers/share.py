@@ -1,7 +1,7 @@
 from pathlib import Path
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from slowapi import Limiter
@@ -17,6 +17,7 @@ router = APIRouter(tags=["Share"])
 TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
+
 @router.post("/share", response_class=HTMLResponse)
 @limiter.limit("1/minute")
 def make_share_link(
@@ -30,7 +31,11 @@ def make_share_link(
 ):
     name = (display_name or "").strip()
     if len(name) < 2 or len(name) > 20:
-        raise HTTPException(status_code=400, detail="표시명은 2~20자로 입력해 주세요.")
+        query_params = {"error": "표시명은 2~20자로 입력해 주세요.", "name": name}
+        return RedirectResponse(
+            url=f"/mbti/share?{urlencode(query_params)}",
+            status_code=303,
+        )
 
     source = (mbti_source or "input").strip()
     if source not in {"input", "self_test"}:

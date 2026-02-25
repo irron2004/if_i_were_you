@@ -473,15 +473,9 @@ async def request_id_middleware(request: Request, call_next):
 if RateLimitExceeded:  # pragma: no cover - optional dependency
 
     @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
+    async def rate_limit_exception_handler(request: Request, exc: Exception):
         detail = getattr(exc, "detail", "요청 한도를 초과했습니다.")
-        response = problem_response(
-            request,
-            status=429,
-            title="Rate Limit Exceeded",
-            detail=detail,
-            type_suffix="rate-limit",
-        )
+
         headers = dict(getattr(exc, "headers", {}) or {})
         if "Retry-After" not in headers:
             limiter = getattr(request.app.state, "limiter", None)
@@ -501,6 +495,23 @@ if RateLimitExceeded:  # pragma: no cover - optional dependency
                         )
                 except Exception:
                     pass
+
+        if request.url.path == "/share" and request.method.upper() == "POST":
+            response = RedirectResponse(
+                url="/mbti/share?error=요청이+잠시+몰렸어요.+1분+뒤에+다시+시도해+주세요.",
+                status_code=303,
+            )
+            for key, value in headers.items():
+                response.headers[key] = value
+            return response
+
+        response = problem_response(
+            request,
+            status=429,
+            title="Rate Limit Exceeded",
+            detail=detail,
+            type_suffix="rate-limit",
+        )
         for key, value in headers.items():
             response.headers[key] = value
         return response
@@ -1014,6 +1025,7 @@ async def mbti_share(
     request: Request,
     name: str | None = None,
     mbti: str | None = None,
+    error: str | None = None,
 ):
     response = templates.TemplateResponse(
         "mbti/share.html",
@@ -1021,6 +1033,7 @@ async def mbti_share(
             "request": request,
             "name": name,
             "mbti": mbti,
+            "error": error,
             "robots_meta": NOINDEX_VALUE,
         },
     )

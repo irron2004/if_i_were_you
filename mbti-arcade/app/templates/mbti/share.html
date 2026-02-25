@@ -26,6 +26,11 @@
     </section>
 
     <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl space-y-6">
+        {% if error %}
+        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            {{ error }}
+        </div>
+        {% endif %}
         <form action="/share" method="POST" class="space-y-6" novalidate>
             <div class="space-y-3">
                 <h2 class="text-xl font-semibold text-slate-900">표시명과 아바타</h2>
@@ -84,7 +89,7 @@
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <p class="text-sm text-slate-500">제출하면 초대 링크가 바로 만들어집니다. 링크를 받은 사람만 접근할 수 있어요.</p>
                 <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-600/40 transition hover:-translate-y-0.5 hover:shadow-xl">
-                    ✨ 초대 만들기
+                    초대 링크 만들기
                 </button>
             </div>
         </form>
@@ -92,7 +97,7 @@
 
     <section class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600 space-y-2">
         <h2 class="text-base font-semibold text-slate-900">다음 단계</h2>
-        <p>초대 링크는 `/i/{token}` 형태로 발급돼요. 친구·가족·동료는 관계를 선택하고 닉네임(선택)을 입력하면 바로 응답을 시작할 수 있습니다.</p>
+        <p>초대 링크를 받은 친구·가족·동료는 관계를 고르고 닉네임(선택)을 입력한 뒤 바로 응답을 시작할 수 있어요.</p>
         <p>응답이 3명 이상 모이면 Self ↔ Others 관점 차이를 비교할 수 있는 인사이트가 열려요.</p>
     </section>
 </div>
