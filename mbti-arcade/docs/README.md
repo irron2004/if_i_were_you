@@ -16,6 +16,7 @@ This directory now owns the MBTI product documentation that previously lived at 
 - [`product/if_i_you.md`](product/if_i_you.md) / [`product/couple.md`](product/couple.md): Backlog for perception gap and couple flows.
 - [`product/mbti_friend_followup.md`](product/mbti_friend_followup.md), [`product/mbti_relationship_flow.md`](product/mbti_relationship_flow.md): Participant and relationship flow notes.
 - [`product/participant_api_summary.md`](product/participant_api_summary.md): API contract reference.
+- [`product/owner_progress_funnel.md`](product/owner_progress_funnel.md): Owner progress funnel (share + polling + unlock).
 - [`product/self_other_execution_plan.md`](product/self_other_execution_plan.md): Track-by-track execution plan.
 - [`product/viral_feedback_todo.md`](product/viral_feedback_todo.md): Copy/UX fixes from viral intake review.
 

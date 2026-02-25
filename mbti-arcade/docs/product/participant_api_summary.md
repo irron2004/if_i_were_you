@@ -1,9 +1,12 @@
 # Participant API & Relation Aggregate Implementation Notes
 
 ## BE-Participant-API
-- `/v1/participants/{invite_token}` 등록, `/v1/answers/{participant_id}` 제출, `/v1/participants/{invite_token}/preview` 미리보기 엔드포인트를 FastAPI 라우터에 추가했습니다. 초대 토큰 검증, 세션 활성화 확인, 참여자 한도 초과시 RFC 9457 ProblemDetails 오류를 반환합니다.【F:mbti-arcade/app/routers/participants.py†L38-L129】
-- 응답 제출 시 기존 답변을 정리하고 `ParticipantAnswer`/`OtherResponse`를 재삽입하며, 축 점수와 MBTI 유형을 재계산한 뒤 종합 및 관계별 집계를 호출합니다. 응답자는 3명 이상일 때 공개되며 임계값도 응답으로 포함됩니다.【F:mbti-arcade/app/routers/participants.py†L169-L257】
-- 프리뷰 엔드포인트는 관계별 집계 결과와 참여자 목록을 결합하고, 잠금 해제 여부에 따라 상세 지표(축 평균, 상위 유형, PGI 등)를 조건부로 노출합니다.【F:mbti-arcade/app/routers/participants.py†L259-L322】
+- `/v1/participants/{invite_token}` 등록, `/v1/answers/{participant_id}` 제출, `/v1/participants/{invite_token}/preview` 미리보기 엔드포인트를 제공합니다. 초대 토큰 검증, 세션 활성화 확인, 참여자 한도 초과시 RFC 9457 ProblemDetails 오류를 반환합니다.【F:mbti-arcade/app/routers/participants.py†L38-L129】
+- `POST /v1/answers/{participant_id}`는 **idempotent** 입니다. 이미 제출된 참여자는 200을 반환하며 기존 제출을 덮어쓰지 않습니다(응답 수 이중 증가 방지).【F:mbti-arcade/app/routers/participants.py†L133-L236】
+- `GET /v1/participants/{invite_token}/preview`는 **owner-only** 입니다. `Cookie: owner_token=...`가 없으면 401을 반환하며, 참여자 목록/집계는 소유자 화면에서만 조회 가능합니다.【F:mbti-arcade/app/routers/participants.py†L239-L309】
+
+## BE-Invite-Status
+- 폴링에 안전한 상태 엔드포인트 `GET /v1/invites/{invite_token}/status`를 추가했습니다. 제출 완료 참여자 수(`answers_submitted_at` 기준)와 잠금 해제 여부만 반환하며, `Cache-Control: no-store`를 설정합니다.【F:mbti-arcade/app/routers/status.py†L1-L63】
 
 ## BE-Relation-Aggregate
 - `recalculate_relation_aggregates`를 추가해 세션별 관계 묶음을 계산하고, 응답 수와 축 평균, 상위 유형 비율, 합의도(consensus), PGI를 저장합니다.【F:mbti-arcade/app/services/aggregator.py†L94-L203】
