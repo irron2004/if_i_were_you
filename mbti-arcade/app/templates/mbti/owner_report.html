@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}리포트 - 360Me{% endblock %}
+
+{% block head %}
+{% if robots_meta %}
+<meta name="robots" content="{{ robots_meta }}">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="surface rounded-3xl p-6 md:p-10">
+  <div class="flex flex-col gap-2">
+    <p class="text-sm font-semibold tracking-wide text-[var(--warm)]">집계 리포트</p>
+    <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">{{ owner_name or "내" }} 리포트</h1>
+    <p class="text-sm text-[var(--ink-soft)]">관계 그룹별로 요약된 인식 흐름을 확인할 수 있어요.</p>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_92%,white_8%)] p-5">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold text-[var(--ink)]">진행</p>
+        <p class="mt-1 text-sm text-[var(--ink-soft)]">누적 응답 {{ respondent_count }}/{{ threshold }}</p>
+      </div>
+      <a href="/me" class="focus-ring inline-flex items-center justify-center rounded-xl border border-[var(--line)] bg-white/60 px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-white">진행 현황으로</a>
+    </div>
+  </div>
+
+  {% if not unlocked %}
+  <div class="mt-6 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--accent-soft)]/40 p-5">
+    <p class="text-sm font-semibold text-[var(--ink)]">아직 잠겨 있어요</p>
+    <p class="mt-1 text-xs text-[var(--ink-soft)]">응답이 {{ threshold }}개 모이면 리포트가 열립니다. 초대 링크를 더 공유해 주세요.</p>
+  </div>
+  {% endif %}
+
+  <div class="mt-6 grid gap-4 md:grid-cols-2">
+    {% for item in relations %}
+    <div class="rounded-2xl border border-[var(--line)] bg-white/60 p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-sm font-semibold text-[var(--ink)]">{{ item.relation.value }}</p>
+          <p class="mt-1 text-xs text-[var(--ink-soft)]">응답 {{ item.respondent_count }}명</p>
+        </div>
+        {% if item.respondent_count >= 3 and item.top_type %}
+        <span class="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">{{ item.top_type }}</span>
+        {% else %}
+        <span class="inline-flex rounded-full border border-[var(--line)] bg-white/60 px-3 py-1 text-xs font-semibold text-[var(--ink-soft)]">잠금</span>
+        {% endif %}
+      </div>
+
+      {% if item.respondent_count >= 3 and item.axes_payload %}
+      <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+        <div class="rounded-xl bg-[var(--bg-strong)]/60 p-3">
+          <p class="font-semibold text-[var(--ink)]">합의도</p>
+          <p class="mt-1 text-[var(--ink-soft)]">{{ item.consensus if item.consensus is not none else '-' }}</p>
+        </div>
+        <div class="rounded-xl bg-[var(--bg-strong)]/60 p-3">
+          <p class="font-semibold text-[var(--ink)]">PGI</p>
+          <p class="mt-1 text-[var(--ink-soft)]">{{ item.pgi if item.pgi is not none else '-' }}</p>
+        </div>
+      </div>
+      {% else %}
+      <p class="mt-4 text-xs text-[var(--ink-soft)]">해당 관계 그룹은 최소 3명 이상 응답해야 요약이 표시됩니다.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-8 rounded-2xl border border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_92%,white_8%)] p-5">
+    <p class="text-sm font-semibold text-[var(--ink)]">코칭 메모</p>
+    <p class="mt-1 text-xs text-[var(--ink-soft)]">MVP에서는 관계 요약만 제공해요. 다음 단계에서 "관계/코칭" 섹션을 확장합니다.</p>
+  </div>
+</div>
+{% endblock %}

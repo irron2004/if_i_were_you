@@ -126,7 +126,9 @@ from app.core.config import (
     REQUEST_ID_HEADER,
     compute_expiry,
     generate_invite_token,
+    generate_owner_token,
     generate_session_id,
+    sha256_hex,
 )
 from app.core.db import get_session as get_core_session
 from app.core.db import init_db as init_core_db
@@ -139,6 +141,8 @@ from app.routers import couple as couple_router
 from app.routers import og as og_router
 from app.routers import participants as participants_router
 from app.routers import profile as profile_router
+from app.routers import status as status_router
+from app.routers import owner as owner_router
 from app.routers import quiz as quiz_router
 from app.routers import report as report_router
 from app.routers import reporting as reporting_router
@@ -149,6 +153,7 @@ from app.routers import share as share_router
 from app.routers import invites as invites_router
 from app.observability import bind_request_id, configure_observability, reset_request_id
 from app.urling import build_invite_url
+from app.urling import build_owner_exchange_url
 from app.utils.problem_details import (
     ProblemDetailsException,
     from_exception,
@@ -412,6 +417,8 @@ app.include_router(og_router.router)
 app.include_router(couple_router.router)
 app.include_router(invites_router.router)
 app.include_router(profile_router.router)
+app.include_router(owner_router.router)
+app.include_router(status_router.router)
 
 if hasattr(share_router, "limiter"):
     app.state.limiter = share_router.limiter
@@ -710,11 +717,13 @@ async def mbti_self_result(request: Request):
     result = MBTI_SUMMARIES.get(mbti_type, _DEFAULT_SUMMARY)
 
     with session_scope() as db:
+        owner_token = generate_owner_token()
         session = SessionModel(
             id=generate_session_id(),
             owner_id=None,
             mode="friend",
             invite_token=generate_invite_token(),
+            owner_token_hash=sha256_hex(owner_token),
             is_anonymous=True,
             expires_at=compute_expiry(72),
             max_raters=50,
@@ -725,6 +734,7 @@ async def mbti_self_result(request: Request):
         invite_token = session.invite_token
 
     invite_url = build_invite_url(request, invite_token)
+    owner_exchange_url = build_owner_exchange_url(request, owner_token=owner_token)
 
     response = templates.TemplateResponse(
         "mbti/self_result.html",
@@ -734,6 +744,7 @@ async def mbti_self_result(request: Request):
             "scores": scores,
             "result": result,
             "invite_url": invite_url,
+            "owner_exchange_url": owner_exchange_url,
             "owner_name": owner_name,
             "robots_meta": NOINDEX_VALUE,
         },

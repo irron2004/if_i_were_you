@@ -29,6 +29,7 @@ def _clean_hosts(raw_hosts: str) -> list[str]:
 
 
 CANONICAL_BASE_URL = os.getenv("CANONICAL_BASE_URL", "").strip()
+KAKAO_JAVASCRIPT_KEY = os.getenv("KAKAO_JAVASCRIPT_KEY", "").strip()
 
 
 def _load_allowed_hosts() -> list[str]:

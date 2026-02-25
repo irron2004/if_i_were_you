@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}진행 현황 - 360Me{% endblock %}
+
+{% block head %}
+{% if robots_meta %}
+<meta name="robots" content="{{ robots_meta }}">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="surface rounded-3xl p-6 md:p-10" data-owner-progress-root data-status-url="{{ status_url }}" data-unlocked="{{ '1' if unlocked else '0' }}">
+  <div class="flex flex-col gap-2">
+    <p class="text-sm font-semibold tracking-wide text-[var(--warm)]">진행 현황</p>
+    <h1 class="text-2xl font-bold tracking-tight text-[var(--ink)]">{{ owner_name or "내" }} 리포트 만들기</h1>
+    <p class="text-sm text-[var(--ink-soft)]">응답이 {{ threshold }}개 모이면 집계 리포트가 열립니다. (참여자는 누가 응답했는지 알 수 없어요)</p>
+  </div>
+
+  <div class="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-white/60 p-5 text-sm text-[var(--ink-soft)] md:grid-cols-3">
+    <div class="rounded-xl bg-[var(--bg-strong)]/50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">1</p>
+      <p class="mt-1 font-semibold text-[var(--ink)]">링크 공유</p>
+      <p class="mt-1 text-xs">친구/가족/동료에게 공유해 주세요.</p>
+    </div>
+    <div class="rounded-xl bg-[var(--bg-strong)]/50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">2</p>
+      <p class="mt-1 font-semibold text-[var(--ink)]">응답 누적</p>
+      <p class="mt-1 text-xs">총 {{ threshold }}명이 제출하면 다음 단계로.</p>
+    </div>
+    <div class="rounded-xl bg-[var(--bg-strong)]/50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-[var(--warm)]">3</p>
+      <p class="mt-1 font-semibold text-[var(--ink)]">리포트 열림</p>
+      <p class="mt-1 text-xs">관계 그룹별 요약이 활성화돼요.</p>
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_92%,white_8%)] p-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-sm text-[var(--ink-soft)]">누적 응답</p>
+        <p class="mt-1 text-3xl font-bold text-[var(--ink)]">
+          <span data-respondent-count>{{ respondent_count }}</span>/<span data-threshold>{{ threshold }}</span>
+        </p>
+        <p class="mt-1 text-xs text-[var(--ink-soft)]" data-owner-progress-hint>3-5초 간격으로 자동 갱신됩니다.</p>
+      </div>
+      <div class="flex flex-col items-stretch gap-2 sm:items-end">
+        <a data-report-link href="/me/report" class="focus-ring inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]" {% if not unlocked %}hidden{% endif %}>리포트 열기</a>
+        <button data-report-locked type="button" class="inline-flex items-center justify-center rounded-xl bg-[var(--bg-strong)] px-4 py-3 text-sm font-semibold text-[var(--ink-soft)]" {% if unlocked %}hidden{% endif %} disabled>리포트 열기 (잠김)</button>
+      </div>
+    </div>
+
+    <div class="mt-4 h-2 w-full rounded-full bg-[var(--bg-strong)]">
+      <div class="h-2 rounded-full bg-[var(--accent)]" data-progress-bar style="width: {{ progress_percent }}%"></div>
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-[var(--line)] bg-white/60 p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-[var(--ink)]">공유 링크</p>
+        <p class="mt-1 text-xs text-[var(--ink-soft)]">이 링크로 들어온 사람이 설문을 작성하면 여기에 반영됩니다.</p>
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <input id="ownerInviteLink" type="text" readonly value="{{ invite_url }}" class="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)]">
+      <button id="copyOwnerInviteLink" type="button" class="focus-ring inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]">
+        링크 복사
+      </button>
+      {% if kakao_js_key %}
+      <button id="kakaoShareInviteLink" type="button" class="focus-ring inline-flex items-center justify-center rounded-xl border border-[var(--line)] bg-white/60 px-4 py-3 text-sm font-semibold text-[var(--ink)] transition hover:bg-white">
+        카카오톡 공유
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--accent-soft)]/40 p-5">
+    <div data-preview-locked {% if unlocked %}hidden{% endif %}>
+      <p class="text-sm font-semibold text-[var(--ink)]">잠금된 프리뷰</p>
+      <p class="mt-1 text-xs text-[var(--ink-soft)]">응답이 모이면 인식 분포/관계 요약이 여기에 표시됩니다.</p>
+    </div>
+    <div data-preview-unlocked {% if not unlocked %}hidden{% endif %}>
+      <p class="text-sm font-semibold text-[var(--ink)]">리포트가 열렸어요</p>
+      <p class="mt-1 text-xs text-[var(--ink-soft)]">관계 그룹별 요약을 확인할 수 있습니다.</p>
+      <div class="mt-3">
+        <a href="/me/report" class="focus-ring inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]">리포트 보러가기</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-x-0 bottom-4 z-40 px-4 md:hidden">
+  <div class="mx-auto flex max-w-3xl gap-2 rounded-2xl border border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface)_88%,white_12%)]/95 p-2 backdrop-blur">
+    <button id="copyOwnerInviteLinkSticky" type="button" class="focus-ring flex-1 rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]">링크 복사</button>
+    <button id="shareOwnerInviteLinkSticky" type="button" class="focus-ring flex-1 rounded-xl border border-[var(--line)] bg-white/60 px-4 py-3 text-sm font-semibold text-[var(--ink)] transition hover:bg-white">공유</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const root = document.querySelector('[data-owner-progress-root]');
+    if (!root) return;
+
+    const showToast = (message) => {
+      const popup = document.getElementById('stickerAwardPopup');
+      const text = document.getElementById('stickerAwardPopupText');
+      if (!popup || !text) return;
+      text.textContent = message;
+      popup.classList.remove('hidden');
+      setTimeout(() => popup.classList.add('hidden'), 2500);
+    };
+
+    const input = document.getElementById('ownerInviteLink');
+    const kakaoKey = {{ (kakao_js_key or '') | tojson }};
+    const copyButtons = [
+      document.getElementById('copyOwnerInviteLink'),
+      document.getElementById('copyOwnerInviteLinkSticky'),
+    ].filter(Boolean);
+    const shareButton = document.getElementById('shareOwnerInviteLinkSticky');
+    const kakaoButton = document.getElementById('kakaoShareInviteLink');
+
+    const copyText = async (value) => {
+      if (!value) {
+        showToast('복사할 링크가 없어요.');
+        return false;
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+        showToast('링크를 복사했어요.');
+        return true;
+      } catch (err) {
+        if (!input) {
+          showToast('복사에 실패했어요.');
+          return false;
+        }
+        input.select();
+        const ok = document.execCommand('copy');
+        showToast(ok ? '링크를 복사했어요.' : '복사에 실패했어요. 직접 선택해 복사해 주세요.');
+        return ok;
+      }
+    };
+
+    copyButtons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const value = input ? input.value || '' : '';
+        await copyText(value);
+      });
+    });
+
+    if (shareButton) {
+      shareButton.addEventListener('click', async () => {
+        const value = input ? input.value || '' : '';
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: '360Me 초대 링크',
+              text: '내 인식 리포트를 만들고 있어요. 1분만 참여해 줄래요?',
+              url: value,
+            });
+            return;
+          } catch (err) {
+            // fall back to copy
+          }
+        }
+        await copyText(value);
+      });
+    }
+
+    const loadKakao = () => {
+      return new Promise((resolve, reject) => {
+        if (!kakaoKey) {
+          reject(new Error('kakao key missing'));
+          return;
+        }
+        if (window.Kakao && window.Kakao.Share) {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('kakao sdk load failed'));
+        document.head.appendChild(script);
+      });
+    };
+
+    if (kakaoButton) {
+      kakaoButton.addEventListener('click', async () => {
+        const value = input ? input.value || '' : '';
+        try {
+          await loadKakao();
+          if (!window.Kakao || !window.Kakao.Share) {
+            throw new Error('kakao sdk unavailable');
+          }
+          if (!window.Kakao.isInitialized()) {
+            window.Kakao.init(kakaoKey);
+          }
+          window.Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+              title: '360Me 초대',
+              description: '내 인식 리포트를 만들고 있어요. 1분만 참여해 줄래요?',
+              link: { mobileWebUrl: value, webUrl: value },
+            },
+            buttons: [
+              { title: '참여하기', link: { mobileWebUrl: value, webUrl: value } },
+            ],
+          });
+        } catch (err) {
+          await copyText(value);
+        }
+      });
+    }
+
+    const statusUrl = root.getAttribute('data-status-url');
+    const countEl = root.querySelector('[data-respondent-count]');
+    const thresholdEl = root.querySelector('[data-threshold]');
+    const progressBar = root.querySelector('[data-progress-bar]');
+    const hintEl = root.querySelector('[data-owner-progress-hint]');
+    const reportLink = root.querySelector('[data-report-link]');
+    const reportLocked = root.querySelector('[data-report-locked]');
+    const previewLocked = root.querySelector('[data-preview-locked]');
+    const previewUnlocked = root.querySelector('[data-preview-unlocked]');
+
+    if (!statusUrl || !countEl || !thresholdEl) {
+      return;
+    }
+
+    const parseIntSafe = (value) => {
+      const n = Number.parseInt(String(value || ''), 10);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const threshold = parseIntSafe(thresholdEl.textContent);
+    let lastCount = parseIntSafe(countEl.textContent);
+    let unlocked = root.getAttribute('data-unlocked') === '1';
+
+    let intervalMs = 4000;
+    const maxIntervalMs = 30000;
+
+    const setUnlockedUi = () => {
+      unlocked = true;
+      root.setAttribute('data-unlocked', '1');
+      if (reportLink) reportLink.hidden = false;
+      if (reportLocked) reportLocked.hidden = true;
+      if (previewLocked) previewLocked.hidden = true;
+      if (previewUnlocked) previewUnlocked.hidden = false;
+    };
+
+    const updateUi = (nextCount) => {
+      countEl.textContent = String(nextCount);
+      if (progressBar && threshold > 0) {
+        const percent = Math.min(100, Math.round((nextCount / threshold) * 100));
+        progressBar.style.width = `${percent}%`;
+      }
+    };
+
+    const requestStatus = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const resp = await fetch(statusUrl, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        if (!resp.ok) {
+          throw new Error('status request failed');
+        }
+        return await resp.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
+    async function tick() {
+      if (unlocked) {
+        return;
+      }
+
+      try {
+        const data = await requestStatus();
+        const nextCount = parseIntSafe(data && data.respondent_count);
+        const nextUnlocked = Boolean(data && data.unlocked);
+
+        if (nextCount > lastCount) {
+          const delta = nextCount - lastCount;
+          showToast(delta === 1 ? '방금 1명이 참여했어요.' : `방금 ${delta}명이 참여했어요.`);
+          intervalMs = 4000;
+        } else {
+          intervalMs = Math.min(maxIntervalMs, Math.round(intervalMs * 1.5));
+        }
+
+        lastCount = nextCount;
+        updateUi(nextCount);
+
+        if (nextUnlocked && !unlocked) {
+          setUnlockedUi();
+          showToast('리포트가 열렸어요.');
+          if (hintEl) hintEl.textContent = '리포트가 열렸습니다.';
+          return;
+        }
+      } catch (err) {
+        intervalMs = Math.min(maxIntervalMs, Math.round(intervalMs * 2));
+      }
+
+      const jitter = Math.floor(Math.random() * 700);
+      setTimeout(tick, intervalMs + jitter);
+    }
+
+    if (!unlocked) {
+      setTimeout(tick, 1200);
+    } else {
+      if (hintEl) hintEl.textContent = '리포트가 열렸습니다.';
+      setUnlockedUi();
+    }
+  })();
+</script>
+{% endblock %}
