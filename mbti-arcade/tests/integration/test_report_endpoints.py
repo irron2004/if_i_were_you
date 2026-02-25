@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from http import HTTPStatus
+from urllib.parse import urlparse
 
 from testing_utils import build_fake_answers
 
@@ -9,6 +10,11 @@ def _create_session(client) -> dict:
     response = client.post("/api/sessions", json={"mode": "friend"})
     assert response.status_code == HTTPStatus.CREATED
     return response.json()
+
+
+def _owner_headers(owner_exchange_url: str) -> dict[str, str]:
+    owner_token = urlparse(owner_exchange_url).path.rstrip("/").split("/")[-1]
+    return {"Cookie": f"owner_token={owner_token}"}
 
 
 def _submit_self(client, session_id: str) -> None:
@@ -40,12 +46,16 @@ def _submit_answers(client, participant_id: int):
 
 def test_participant_report_success(client):
     session = _create_session(client)
+    owner_headers = _owner_headers(session["owner_exchange_url"])
     _submit_self(client, session["session_id"])
 
     participant = _register_participant(client, session["invite_token"])
     _submit_answers(client, participant["participant_id"])
 
-    response = client.get(f"/v1/report/participant/{participant['participant_id']}")
+    response = client.get(
+        f"/v1/report/participant/{participant['participant_id']}",
+        headers=owner_headers,
+    )
     assert response.status_code == HTTPStatus.OK
 
     body = response.json()
@@ -62,11 +72,15 @@ def test_participant_report_success(client):
 
 def test_participant_report_requires_answers(client):
     session = _create_session(client)
+    owner_headers = _owner_headers(session["owner_exchange_url"])
     _submit_self(client, session["session_id"])
 
     participant = _register_participant(client, session["invite_token"])
 
-    response = client.get(f"/v1/report/participant/{participant['participant_id']}")
+    response = client.get(
+        f"/v1/report/participant/{participant['participant_id']}",
+        headers=owner_headers,
+    )
     assert response.status_code == HTTPStatus.CONFLICT
     body = response.json()
     assert body["type"].endswith("/answers-missing")
@@ -74,6 +88,7 @@ def test_participant_report_requires_answers(client):
 
 def test_session_report_lock_and_unlock(client):
     session = _create_session(client)
+    owner_headers = _owner_headers(session["owner_exchange_url"])
     _submit_self(client, session["session_id"])
 
     participant_ids = []
@@ -82,7 +97,10 @@ def test_session_report_lock_and_unlock(client):
         participant_ids.append(registration["participant_id"])
         _submit_answers(client, registration["participant_id"])
 
-        report = client.get(f"/v1/report/session/{session['session_id']}")
+        report = client.get(
+            f"/v1/report/session/{session['session_id']}",
+            headers=owner_headers,
+        )
         assert report.status_code == HTTPStatus.OK
         payload = report.json()
         expected_count = idx + 1
@@ -98,6 +116,9 @@ def test_session_report_lock_and_unlock(client):
 
     # sanity check participant report after unlock
     final_participant = participant_ids[-1]
-    participant_report = client.get(f"/v1/report/participant/{final_participant}")
+    participant_report = client.get(
+        f"/v1/report/participant/{final_participant}",
+        headers=owner_headers,
+    )
     assert participant_report.status_code == HTTPStatus.OK
     assert participant_report.json()["respondent_count"] == 3

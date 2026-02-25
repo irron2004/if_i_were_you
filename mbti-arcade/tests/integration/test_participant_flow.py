@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from http import HTTPStatus
+from urllib.parse import urlparse
 
 from testing_utils import FAKE_PARTICIPANT_PREVIEW, build_fake_answers
 
@@ -10,6 +11,11 @@ def _create_session(client) -> dict:
     response = client.post("/api/sessions", json={"mode": "basic"})
     assert response.status_code == HTTPStatus.CREATED
     return response.json()
+
+
+def _owner_headers(owner_exchange_url: str) -> dict[str, str]:
+    owner_token = urlparse(owner_exchange_url).path.rstrip("/").split("/")[-1]
+    return {"Cookie": f"owner_token={owner_token}"}
 
 
 def _submit_self(client, session_id: str, answers: list[dict[str, int]]) -> None:
@@ -33,17 +39,22 @@ def _register_participant(client, invite_token: str, idx: int) -> dict:
     return response.json()
 
 
-def _submit_answers(client, participant_id: int, answers: list[dict[str, int]]):
+def _submit_answers(
+    client,
+    participant_id: int,
+    answers: list[dict[str, int]],
+    expected_status: int = HTTPStatus.CREATED,
+):
     response = client.post(
         f"/v1/answers/{participant_id}",
         json={"answers": answers},
     )
-    assert response.status_code == HTTPStatus.CREATED
+    assert response.status_code == expected_status
     return response.json()
 
 
-def _preview(client, invite_token: str) -> dict:
-    response = client.get(f"/v1/participants/{invite_token}/preview")
+def _preview(client, invite_token: str, headers: dict[str, str]) -> dict:
+    response = client.get(f"/v1/participants/{invite_token}/preview", headers=headers)
     assert response.status_code == HTTPStatus.OK
     return response.json()
 
@@ -62,7 +73,7 @@ def test_participant_registration_and_submission(client):
     assert body["threshold"] == 3
 
 
-def test_participant_duplicate_submission_overwrites(client):
+def test_participant_duplicate_submission_is_idempotent(client):
     session = _create_session(client)
     answers = build_fake_answers()
     _submit_self(client, session["session_id"], answers)
@@ -74,15 +85,21 @@ def test_participant_duplicate_submission_overwrites(client):
 
     modified = deepcopy(answers)
     modified[0] = {"question_id": modified[0]["question_id"], "value": 5}
-    second = _submit_answers(client, participant["participant_id"], modified)
+    second = _submit_answers(
+        client,
+        participant["participant_id"],
+        modified,
+        expected_status=HTTPStatus.OK,
+    )
 
     assert second["respondent_count"] == 1
-    assert second["axes_payload"] != first["axes_payload"]
-    assert second["perceived_type"]
+    assert second["axes_payload"] == first["axes_payload"]
+    assert second["perceived_type"] == first["perceived_type"]
 
 
 def test_preview_locks_until_threshold_and_matches_fixture(client):
     session = _create_session(client)
+    owner_headers = _owner_headers(session["owner_exchange_url"])
     answers = build_fake_answers()
     _submit_self(client, session["session_id"], answers)
 
@@ -92,7 +109,7 @@ def test_preview_locks_until_threshold_and_matches_fixture(client):
         participant_ids.append(registration["participant_id"])
         _submit_answers(client, registration["participant_id"], answers)
 
-        preview = _preview(client, session["invite_token"])
+        preview = _preview(client, session["invite_token"], owner_headers)
         expected_count = idx + 1
         assert preview["respondent_count"] == expected_count
         if expected_count < 3:
@@ -101,7 +118,7 @@ def test_preview_locks_until_threshold_and_matches_fixture(client):
         else:
             assert preview["unlocked"] is True
 
-    final_preview = _preview(client, session["invite_token"])
+    final_preview = _preview(client, session["invite_token"], owner_headers)
     assert final_preview["respondent_count"] == 3
     assert final_preview["unlocked"] is True
 
