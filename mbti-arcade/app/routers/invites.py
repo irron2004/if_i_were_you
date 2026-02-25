@@ -5,11 +5,17 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.config import compute_expiry, generate_invite_token, generate_session_id
+from app.core.config import (
+    compute_expiry,
+    generate_invite_token,
+    generate_owner_token,
+    generate_session_id,
+    sha256_hex,
+)
 from app.database import get_db
 from app.models import OwnerProfile, Session as SessionModel
 from app.schemas import InviteCreateRequest, InviteCreateResponse
-from app.urling import build_invite_url
+from app.urling import build_invite_url, build_owner_exchange_url
 from app.utils.auth import extract_owner_key
 from app.utils.problem_details import ProblemDetailsException
 
@@ -29,9 +35,7 @@ def create_invite(
     owner_key = extract_owner_key(request)
 
     profile = (
-        db.query(OwnerProfile)
-        .filter(OwnerProfile.owner_key == owner_key)
-        .one_or_none()
+        db.query(OwnerProfile).filter(OwnerProfile.owner_key == owner_key).one_or_none()
     )
     if profile is None:
         raise ProblemDetailsException(
@@ -43,6 +47,7 @@ def create_invite(
 
     session_id = generate_session_id()
     invite_token = generate_invite_token()
+    owner_token = generate_owner_token()
     expires_at = compute_expiry(_hours_from_days(payload.expires_in_days))
 
     session = SessionModel(
@@ -50,6 +55,7 @@ def create_invite(
         owner_id=None,
         mode="friend",
         invite_token=invite_token,
+        owner_token_hash=sha256_hex(owner_token),
         is_anonymous=not profile.show_public,
         expires_at=expires_at,
         max_raters=payload.max_raters,
@@ -62,11 +68,13 @@ def create_invite(
     db.commit()
 
     invite_url = build_invite_url(request, token=session.invite_token)
+    owner_exchange_url = build_owner_exchange_url(request, owner_token=owner_token)
 
     return InviteCreateResponse(
         session_id=session.id,
         invite_token=session.invite_token,
         invite_url=invite_url,
+        owner_exchange_url=owner_exchange_url,
         expires_at=session.expires_at,
         max_raters=session.max_raters,
         show_public=profile.show_public,

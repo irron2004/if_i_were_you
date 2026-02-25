@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -56,6 +56,7 @@ class SessionCreate(BaseModel):
 class SessionResponse(BaseModel):
     session_id: str
     invite_token: str
+    owner_exchange_url: Optional[str] = None
     expires_at: datetime
     mode: str
     max_raters: int
@@ -288,8 +289,18 @@ class InviteCreateResponse(BaseModel):
     session_id: str
     invite_token: str
     invite_url: str
+    owner_exchange_url: Optional[str] = None
     expires_at: datetime
     max_raters: int
     show_public: bool
     owner_display_name: str
     owner_avatar_url: Optional[str]
+
+
+class InviteStatusResponse(BaseModel):
+    respondent_count: int
+    threshold: int
+    unlocked: bool
+    expires_at: datetime
+    max_raters: int
+    updated_at: Optional[datetime] = None

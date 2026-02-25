@@ -1,19 +1,30 @@
-﻿from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.config import compute_expiry, generate_invite_token, generate_session_id
+from app.core.config import (
+    compute_expiry,
+    generate_invite_token,
+    generate_owner_token,
+    generate_session_id,
+    sha256_hex,
+)
 from app.data.loader import seed_questions
 from app.data.questions import questions_for_mode
 from app.database import get_db
 from app.models import Session as SessionModel, User
 from app.schemas import InviteUpdate, QuestionSchema, SessionCreate, SessionResponse
+from app.urling import build_owner_exchange_url
 from app.utils.problem_details import ProblemDetailsException
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 
 
 @router.post("/sessions", response_model=SessionResponse, status_code=201)
-async def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
+async def create_session(
+    payload: SessionCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     seed_questions(db)
 
     owner = None
@@ -28,6 +39,7 @@ async def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
 
     session_id = generate_session_id()
     invite_token = generate_invite_token()
+    owner_token = generate_owner_token()
     expires_at = compute_expiry(payload.expires_in_hours)
 
     session = SessionModel(
@@ -35,6 +47,7 @@ async def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
         owner_id=owner.id if owner else None,
         mode=payload.mode,
         invite_token=invite_token,
+        owner_token_hash=sha256_hex(owner_token),
         is_anonymous=payload.anonymous,
         expires_at=expires_at,
         max_raters=payload.max_raters,
@@ -43,9 +56,12 @@ async def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
     db.add(session)
     db.commit()
 
+    owner_exchange_url = build_owner_exchange_url(request, owner_token=owner_token)
+
     return SessionResponse(
         session_id=session_id,
         invite_token=invite_token,
+        owner_exchange_url=owner_exchange_url,
         expires_at=expires_at,
         mode=payload.mode,
         max_raters=payload.max_raters,
