@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.core.config import sha256_hex
 from app.models import Participant, Question, Session as SessionModel
 from app.schemas import (
     DIMENSIONS,
@@ -23,6 +24,31 @@ from app.services.scoring import norms_to_mbti
 from app.utils.problem_details import ProblemDetailsException
 
 UNLOCK_THRESHOLD = 3
+
+OWNER_TOKEN_COOKIE = "owner_token"
+
+
+def _ensure_owner_cookie(request: Request, session: SessionModel) -> None:
+    owner_token = request.cookies.get(OWNER_TOKEN_COOKIE)
+    if not owner_token:
+        raise ProblemDetailsException(
+            status_code=401,
+            title="Unauthorized",
+            detail="소유자 인증 쿠키가 필요합니다.",
+            type_suffix="unauthorized",
+        )
+
+    if (
+        not session.owner_token_hash
+        or sha256_hex(owner_token) != session.owner_token_hash
+    ):
+        raise ProblemDetailsException(
+            status_code=401,
+            title="Unauthorized",
+            detail="소유자 인증 정보가 올바르지 않습니다.",
+            type_suffix="unauthorized",
+        )
+
 
 router = APIRouter(prefix="/v1/report", tags=["report"])
 
@@ -42,7 +68,11 @@ def _load_self_axes(db: Session, session: SessionModel) -> Dict[str, float]:
 
 
 @router.get("/participant/{participant_id}", response_model=ParticipantReportResponse)
-def participant_report(participant_id: int, db: Session = Depends(get_db)) -> ParticipantReportResponse:
+def participant_report(
+    participant_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ParticipantReportResponse:
     participant = db.get(Participant, participant_id)
     if participant is None:
         raise ProblemDetailsException(
@@ -69,6 +99,8 @@ def participant_report(participant_id: int, db: Session = Depends(get_db)) -> Pa
             type_suffix="session-missing",
         )
 
+    _ensure_owner_cookie(request, session)
+
     self_axes = _load_self_axes(db, session)
 
     if session.self_mbti:
@@ -77,8 +109,7 @@ def participant_report(participant_id: int, db: Session = Depends(get_db)) -> Pa
         self_type = norms_to_mbti(self_axes)
 
     participant_axes = {
-        dim: round(participant.axes_payload.get(dim, 0.0), 6)
-        for dim in DIMENSIONS
+        dim: round(participant.axes_payload.get(dim, 0.0), 6) for dim in DIMENSIONS
     }
 
     diff_axes = []
@@ -109,7 +140,11 @@ def participant_report(participant_id: int, db: Session = Depends(get_db)) -> Pa
 
 
 @router.get("/session/{session_id}", response_model=SessionReportResponse)
-def session_report(session_id: str, db: Session = Depends(get_db)) -> SessionReportResponse:
+def session_report(
+    session_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> SessionReportResponse:
     session = db.get(SessionModel, session_id)
     if session is None:
         raise ProblemDetailsException(
@@ -118,6 +153,8 @@ def session_report(session_id: str, db: Session = Depends(get_db)) -> SessionRep
             detail="해당 세션을 찾을 수 없습니다.",
             type_suffix="session-not-found",
         )
+
+    _ensure_owner_cookie(request, session)
 
     self_axes: Dict[str, float] | None
     try:

@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.data.loader import seed_questions
+from app.core.config import sha256_hex
 from app.database import get_db
 from app.models import (
     OtherResponse,
@@ -38,6 +39,30 @@ from app.utils.problem_details import ProblemDetailsException
 router = APIRouter(prefix="/v1", tags=["participants"])
 
 UNLOCK_THRESHOLD = 3
+
+OWNER_TOKEN_COOKIE = "owner_token"
+
+
+def _ensure_owner_cookie(request: Request, session: SessionModel) -> None:
+    owner_token = request.cookies.get(OWNER_TOKEN_COOKIE)
+    if not owner_token:
+        raise ProblemDetailsException(
+            status_code=401,
+            title="Unauthorized",
+            detail="소유자 인증 쿠키가 필요합니다.",
+            type_suffix="unauthorized",
+        )
+
+    if (
+        not session.owner_token_hash
+        or sha256_hex(owner_token) != session.owner_token_hash
+    ):
+        raise ProblemDetailsException(
+            status_code=401,
+            title="Unauthorized",
+            detail="소유자 인증 정보가 올바르지 않습니다.",
+            type_suffix="unauthorized",
+        )
 
 
 def _participant_rater_hash(participant_id: int) -> str:
@@ -76,9 +101,7 @@ async def register_participant(
     db: Session = Depends(get_db),
 ):
     session = (
-        db.query(SessionModel)
-        .filter(SessionModel.invite_token == invite_token)
-        .first()
+        db.query(SessionModel).filter(SessionModel.invite_token == invite_token).first()
     )
     if session is None:
         raise ProblemDetailsException(
@@ -133,6 +156,7 @@ async def register_participant(
 async def submit_participant_answers(
     participant_id: int,
     payload: ParticipantAnswerSubmitRequest,
+    response: Response,
     db: Session = Depends(get_db),
 ):
     participant = db.get(Participant, participant_id)
@@ -146,6 +170,28 @@ async def submit_participant_answers(
 
     session = participant.session
     ensure_session_active(session)
+
+    if participant.answers_submitted_at is not None:
+        respondents = (
+            db.query(func.count(Participant.id))
+            .filter(
+                Participant.session_id == session.id,
+                Participant.answers_submitted_at.isnot(None),
+            )
+            .scalar()
+            or 0
+        )
+        response.status_code = 200
+        return ParticipantAnswerSubmitResponse(
+            participant_id=participant.id,
+            session_id=session.id,
+            relation=participant.relation,
+            axes_payload=participant.axes_payload or {},
+            perceived_type=participant.perceived_type or "",
+            respondent_count=respondents,
+            unlocked=respondents >= UNLOCK_THRESHOLD,
+            threshold=UNLOCK_THRESHOLD,
+        )
 
     answers = payload.answers
     if not answers:
@@ -196,7 +242,9 @@ async def submit_participant_answers(
 
         answer_pairs = [(item.question_id, item.value) for item in answers]
         norms = compute_norms(answer_pairs, lookup)
-        participant.axes_payload = {dim: round(value, 6) for dim, value in norms.items()}
+        participant.axes_payload = {
+            dim: round(value, 6) for dim, value in norms.items()
+        }
         participant.perceived_type = norms_to_mbti(norms)
         now = datetime.now(timezone.utc)
         participant.answers_submitted_at = now
@@ -242,12 +290,11 @@ async def submit_participant_answers(
 )
 async def participant_preview(
     invite_token: str,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     session = (
-        db.query(SessionModel)
-        .filter(SessionModel.invite_token == invite_token)
-        .first()
+        db.query(SessionModel).filter(SessionModel.invite_token == invite_token).first()
     )
     if session is None:
         raise ProblemDetailsException(
@@ -256,6 +303,8 @@ async def participant_preview(
             detail="초대 정보를 찾을 수 없습니다.",
             type_suffix="invite-not-found",
         )
+
+    _ensure_owner_cookie(request, session)
 
     relation_result = recalculate_relation_aggregates(session.id, db)
     db.commit()
