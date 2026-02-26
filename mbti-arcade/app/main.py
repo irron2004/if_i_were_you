@@ -130,11 +130,13 @@ from app.core.config import (
     generate_session_id,
     sha256_hex,
 )
+from app.core.db import DATABASE_URL as CORE_DATABASE_URL
 from app.core.db import get_session as get_core_session
 from app.core.db import init_db as init_core_db
 from app.data.loader import seed_questions
 from app.data.questionnaire_loader import get_question_lookup
 from app.data.questions import questions_for_mode, select_invite_other_questions
+from app.database import DATABASE_URL as ORM_DATABASE_URL
 from app.database import Base, engine, session_scope, get_db
 from app.routers import health
 from app.routers import couple as couple_router
@@ -170,6 +172,7 @@ from app.models import (
     Session as SessionModel,
 )
 from app.utils.privacy import apply_noindex_headers, NOINDEX_VALUE
+from app.utils.sqlite_schema_repair import repair_sqlite_schema_for_url
 from app.schemas import DIMENSIONS, ParticipantRegistrationRequest
 from app.services.aggregator import recalculate_relation_aggregates
 from app.services.scoring import compute_norms, norm_to_radar
@@ -552,6 +555,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
+    repair_sqlite_schema_for_url(ORM_DATABASE_URL)
+    repair_sqlite_schema_for_url(CORE_DATABASE_URL)
     init_core_db()
     Base.metadata.create_all(bind=engine)
     with session_scope() as db:
