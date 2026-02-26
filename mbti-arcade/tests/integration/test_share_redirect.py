@@ -24,3 +24,9 @@ def test_share_redirect_is_valid_url(client):
         assert parsed_share.scheme in {"http", "https"}
         assert parsed_share.netloc
     assert parsed_share.path.startswith("/i/")
+
+
+def test_get_share_redirects_to_mbti_share(client):
+    response = client.get("/share", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers.get("location") == "/mbti/share"

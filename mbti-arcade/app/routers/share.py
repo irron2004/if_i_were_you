@@ -18,6 +18,11 @@ TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
 
+@router.get("/share", response_class=HTMLResponse)
+def share_form_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/mbti/share", status_code=303)
+
+
 @router.post("/share", response_class=HTMLResponse)
 @limiter.limit("1/minute")
 def make_share_link(
