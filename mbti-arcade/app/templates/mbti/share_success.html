@@ -13,6 +13,7 @@
 {% set share_url = url or request.query_params.get('url', '') %}
 {% set owner_name = name or request.query_params.get('name', '') %}
 {% set owner_mbti = mbti or request.query_params.get('mbti', '') %}
+{% set owner_exchange_url_value = owner_exchange_url or request.query_params.get('owner_exchange_url', '') %}
 <div class="mx-auto max-w-4xl space-y-10 py-10">
     <section class="rounded-3xl bg-gradient-to-br from-emerald-500 via-sky-500 to-indigo-600 px-6 py-10 text-white shadow-xl">
         <div class="space-y-4 text-center">
@@ -77,6 +78,9 @@
             <li>• 초대 페이지는 검색엔진에 노출되지 않으니 안심하고 공유해도 됩니다.</li>
         </ul>
         <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+            {% if owner_exchange_url_value %}
+            <a href="{{ owner_exchange_url_value }}" class="inline-flex items-center justify-center rounded-xl border border-indigo-300 px-5 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">내 진행 현황 보기</a>
+            {% endif %}
             <a href="/mbti/share" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">다른 초대 만들기</a>
             <a href="/mbti/friend-system" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-indigo-700">친구 평가 안내 보기</a>
         </div>

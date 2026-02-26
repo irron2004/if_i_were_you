@@ -6,11 +6,20 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy.orm import Session as OrmSession
 
+from app.core.config import (
+    compute_expiry,
+    generate_invite_token,
+    generate_owner_token,
+    generate_session_id,
+    sha256_hex,
+)
 from app.core.db import get_session
 from app.core.services.mbti_service import MBTIService
-from app.core.token import issue_token
-from app.urling import build_invite_url
+from app.database import get_db
+from app.models import Session as SessionModel
+from app.urling import build_invite_url, build_owner_exchange_url
 
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(tags=["Share"])
@@ -33,6 +42,7 @@ def make_share_link(
     mbti_value: str = Form(""),
     show_public: str | None = Form(None),
     session=Depends(get_session),
+    db: OrmSession = Depends(get_db),
 ):
     name = (display_name or "").strip()
     if len(name) < 2 or len(name) > 20:
@@ -62,11 +72,32 @@ def make_share_link(
         show_public=bool(show_public),
     )
 
-    token = issue_token(pair_id, mbti_clean)
-    share_url = build_invite_url(request, token=token)
+    _ = pair_id
+
+    owner_token = generate_owner_token()
+    invite_token = generate_invite_token()
+    owner_session = SessionModel(
+        id=generate_session_id(),
+        owner_id=None,
+        mode="friend",
+        invite_token=invite_token,
+        owner_token_hash=sha256_hex(owner_token),
+        is_anonymous=not bool(show_public),
+        expires_at=compute_expiry(72),
+        max_raters=50,
+        self_mbti=mbti_clean or None,
+        snapshot_owner_name=name,
+        snapshot_owner_avatar=avatar,
+    )
+    db.add(owner_session)
+    db.commit()
+
+    share_url = build_invite_url(request, token=invite_token)
+    owner_exchange_url = build_owner_exchange_url(request, owner_token=owner_token)
     query_params = {"url": share_url, "name": name}
     if mbti_clean:
         query_params["mbti"] = mbti_clean
+    query_params["owner_exchange_url"] = owner_exchange_url
 
     return RedirectResponse(
         url=f"/mbti/share_success?{urlencode(query_params)}",

@@ -8,7 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.data.loader import seed_questions
-from app.core.config import sha256_hex
+from app.core.config import generate_invite_token, sha256_hex
 from app.database import get_db
 from app.models import (
     OtherResponse,
@@ -119,7 +119,7 @@ async def register_participant(
 
     participant = Participant(
         session_id=session.id,
-        invite_token=invite_token,
+        invite_token=generate_invite_token(),
         relation=payload.relation,
         display_name=display_name,
         consent_display=payload.consent_display,

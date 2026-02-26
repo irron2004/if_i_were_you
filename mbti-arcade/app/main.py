@@ -814,85 +814,92 @@ async def mbti_result(request: Request):
     if participant_id and invite_token:
         with session_scope() as db:
             participant = db.get(Participant, participant_id)
-            if participant and participant.invite_token == invite_token:
-                session_record = db.get(SessionModel, participant.session_id)
-                if session_record is not None:
-                    rater_hash = f"participant:{participant.id}"
-                    db.query(ParticipantAnswer).filter(
-                        ParticipantAnswer.participant_id == participant.id
-                    ).delete()
-                    db.query(OtherResponse).filter(
-                        OtherResponse.session_id == session_record.id,
-                        OtherResponse.rater_hash == rater_hash,
-                    ).delete()
+            session_record = (
+                db.query(SessionModel)
+                .filter(SessionModel.invite_token == invite_token)
+                .one_or_none()
+            )
+            if (
+                participant is not None
+                and session_record is not None
+                and participant.session_id == session_record.id
+            ):
+                rater_hash = f"participant:{participant.id}"
+                db.query(ParticipantAnswer).filter(
+                    ParticipantAnswer.participant_id == participant.id
+                ).delete()
+                db.query(OtherResponse).filter(
+                    OtherResponse.session_id == session_record.id,
+                    OtherResponse.rater_hash == rater_hash,
+                ).delete()
 
-                    for question_id, answer_value in answer_pairs:
-                        db.add(
-                            ParticipantAnswer(
-                                participant_id=participant.id,
-                                question_id=question_id,
-                                value=answer_value,
-                            )
+                for question_id, answer_value in answer_pairs:
+                    db.add(
+                        ParticipantAnswer(
+                            participant_id=participant.id,
+                            question_id=question_id,
+                            value=answer_value,
                         )
-                        db.add(
-                            OtherResponse(
-                                session_id=session_record.id,
-                                rater_hash=rater_hash,
-                                participant_id=participant.id,
-                                question_id=question_id,
-                                value=answer_value,
-                                relation_tag=participant.relation.value,
-                            )
+                    )
+                    db.add(
+                        OtherResponse(
+                            session_id=session_record.id,
+                            rater_hash=rater_hash,
+                            participant_id=participant.id,
+                            question_id=question_id,
+                            value=answer_value,
+                            relation_tag=participant.relation.value,
                         )
+                    )
 
-                    norms = compute_norms(answer_pairs, _QUESTION_DIM_SIGN)
-                    now = datetime.now(timezone.utc)
-                    participant.axes_payload = {
-                        dim: round(norms.get(dim, 0.0), 6) for dim in DIMENSIONS
+                norms = compute_norms(answer_pairs, _QUESTION_DIM_SIGN)
+                now = datetime.now(timezone.utc)
+                participant.axes_payload = {
+                    dim: round(norms.get(dim, 0.0), 6) for dim in DIMENSIONS
+                }
+                participant.perceived_type = mbti_type
+                participant.answers_submitted_at = now
+                participant.computed_at = now
+
+                summary = recalculate_relation_aggregates(session_record.id, db)
+                unlocked = summary.total_respondents >= 3
+                relation_summary = [
+                    {
+                        "relation": RELATION_LABELS.get(
+                            item.relation.value, item.relation.value
+                        ),
+                        "respondent_count": item.respondent_count,
+                        "top_type": item.top_type if unlocked else None,
+                        "pgi": round(item.pgi, 2)
+                        if unlocked and item.pgi is not None
+                        else None,
                     }
-                    participant.perceived_type = mbti_type
-                    participant.answers_submitted_at = now
-                    participant.computed_at = now
+                    for item in summary.relations
+                ]
 
-                    summary = recalculate_relation_aggregates(session_record.id, db)
-                    unlocked = summary.total_respondents >= 3
-                    relation_summary = [
-                        {
-                            "relation": RELATION_LABELS.get(
-                                item.relation.value, item.relation.value
-                            ),
-                            "respondent_count": item.respondent_count,
-                            "top_type": item.top_type if unlocked else None,
-                            "pgi": round(item.pgi, 2)
-                            if unlocked and item.pgi is not None
-                            else None,
-                        }
-                        for item in summary.relations
-                    ]
+                visible_pgi = [
+                    item["pgi"]
+                    for item in relation_summary
+                    if item.get("pgi") is not None
+                ]
+                if visible_pgi:
+                    avg_pgi = sum(visible_pgi) / len(visible_pgi)
+                    if avg_pgi >= 60:
+                        burnout_signal = "관계별 인식 격차가 높아 지침/번아웃 위험 신호가 있습니다. 휴식과 경계 설정 대화를 권장합니다."
+                    elif avg_pgi >= 40:
+                        burnout_signal = "관계별 인식 격차가 누적되고 있어 피로 신호를 점검해 보는 것이 좋습니다."
+                    else:
+                        burnout_signal = "현재는 큰 소진 신호가 보이지 않지만, 주기적으로 인식 차이를 점검해 보세요."
 
-                    visible_pgi = [
-                        item["pgi"]
-                        for item in relation_summary
-                        if item.get("pgi") is not None
-                    ]
-                    if visible_pgi:
-                        avg_pgi = sum(visible_pgi) / len(visible_pgi)
-                        if avg_pgi >= 60:
-                            burnout_signal = "관계별 인식 격차가 높아 지침/번아웃 위험 신호가 있습니다. 휴식과 경계 설정 대화를 권장합니다."
-                        elif avg_pgi >= 40:
-                            burnout_signal = "관계별 인식 격차가 누적되고 있어 피로 신호를 점검해 보는 것이 좋습니다."
-                        else:
-                            burnout_signal = "현재는 큰 소진 신호가 보이지 않지만, 주기적으로 인식 차이를 점검해 보세요."
-
-                    report_meta = {
-                        "owner_name": session_record.snapshot_owner_name
-                        or friend_name
-                        or "공유자",
-                        "owner_mbti": friend_mbti or session_record.self_mbti,
-                        "evaluator_mbti": mbti_type,
-                        "respondent_count": summary.total_respondents,
-                        "unlocked": unlocked,
-                    }
+                report_meta = {
+                    "owner_name": session_record.snapshot_owner_name
+                    or friend_name
+                    or "공유자",
+                    "owner_mbti": friend_mbti or session_record.self_mbti,
+                    "evaluator_mbti": mbti_type,
+                    "respondent_count": summary.total_respondents,
+                    "unlocked": unlocked,
+                }
 
     response = templates.TemplateResponse(
         "mbti/result.html",
@@ -1052,6 +1059,7 @@ async def mbti_share_success(
     url: str | None = None,
     name: str | None = None,
     mbti: str | None = None,
+    owner_exchange_url: str | None = None,
 ):
     response = templates.TemplateResponse(
         "mbti/share_success.html",
@@ -1060,6 +1068,7 @@ async def mbti_share_success(
             "url": url,
             "name": name,
             "mbti": mbti,
+            "owner_exchange_url": owner_exchange_url,
             "robots_meta": NOINDEX_VALUE,
         },
     )
