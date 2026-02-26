@@ -22,7 +22,7 @@ templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 @limiter.limit("1/minute")
 def make_share_link(
     request: Request,
-    display_name: str = Form(...),
+    display_name: str | None = Form(None),
     avatar_url: str | None = Form(None),
     mbti_source: str = Form("input"),
     mbti_value: str = Form(""),

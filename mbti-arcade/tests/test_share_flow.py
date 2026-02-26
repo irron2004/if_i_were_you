@@ -106,3 +106,20 @@ def test_rate_limit_redirects_to_share_with_friendly_error(client):
     assert "잠시" in error
     assert "다시 시도" in error
     assert "Retry-After" in limited.headers
+
+
+def test_missing_display_name_redirects_with_friendly_error(client):
+    response = client.post(
+        "/share",
+        data={"mbti_source": "input", "mbti_value": "INTJ"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    location = response.headers.get("location")
+    assert location is not None
+    assert location.startswith("/mbti/share?")
+
+    parsed = urlparse(location)
+    params = parse_qs(parsed.query)
+    error = params.get("error", [""])[0]
+    assert "표시명" in error
