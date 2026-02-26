@@ -1,7 +1,5 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import settings
-
 
 def test_share_flow(client):
     """공유 링크 생성 → 퀴즈 → 결과 플로우 테스트"""
@@ -25,17 +23,38 @@ def test_share_flow(client):
     parsed_url = urlparse(redirect_url)
     query_params = parse_qs(parsed_url.query)
     share_url = query_params.get("url", [None])[0]
+    owner_exchange_url = query_params.get("owner_exchange_url", [None])[0]
     assert share_url is not None
+    assert owner_exchange_url is not None
+    assert "/o/" in owner_exchange_url
     assert "/i/" in share_url
     test_token = share_url.split("/i/")[1]
 
     response = client.get(f"/i/{test_token}")
     assert response.status_code == 200
 
-    # 3. 퀴즈 제출
-    quiz_data = {"token": test_token, "relation": "friend"}
+    # 3. 참여자 등록 + 제출
+    reg = client.post(
+        f"/v1/participants/{test_token}",
+        json={
+            "relation": "friend",
+            "display_name": "참여자-A",
+            "consent_display": False,
+        },
+    )
+    assert reg.status_code == 201
+    participant_id = reg.json()["participant_id"]
 
-    # 24개 질문에 대한 답변 추가 (실제 데이터베이스 질문 ID 사용)
+    quiz_data = {
+        "friend_name": "테스트 사용자",
+        "friend_mbti": "INTJ",
+        "relationship": "friend",
+        "relation_label": "친구",
+        "responder_name": "참여자-A",
+        "invite_token": test_token,
+        "participant_id": str(participant_id),
+    }
+
     question_ids = [
         1,
         2,
@@ -63,15 +82,16 @@ def test_share_flow(client):
         502,
     ]
     for qid in question_ids:
-        quiz_data[f"q{qid}"] = "3"  # 보통이다
+        quiz_data[f"q{qid}"] = "3"
 
-    response = client.post(f"/mbti/result/{test_token}", data=quiz_data)
-    assert response.status_code == 200
+    submit = client.post("/mbti/result", data=quiz_data)
+    assert submit.status_code == 200
 
-    html = response.text
-    expected_prefix = f"{settings.CANONICAL_BASE_URL}/i/"
-    assert expected_prefix in html
-    assert "testserver" not in html
+    status = client.get(f"/v1/invites/{test_token}/status")
+    assert status.status_code == 200
+    status_body = status.json()
+    assert status_body["respondent_count"] == 1
+    assert status_body["threshold"] == 3
 
 
 def test_expired_token(client):

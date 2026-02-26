@@ -4,6 +4,9 @@ from copy import deepcopy
 from http import HTTPStatus
 from urllib.parse import urlparse
 
+from sqlalchemy import text
+
+from app.database import engine as orm_engine
 from testing_utils import FAKE_PARTICIPANT_PREVIEW, build_fake_answers
 
 
@@ -161,3 +164,29 @@ def test_participant_registration_defaults_to_anonymous_name(client):
     assert response.status_code == HTTPStatus.CREATED
     body = response.json()
     assert body["display_name"] == "익명"
+
+
+def test_two_respondents_counted_even_with_participant_token_uniqueness(client):
+    session = _create_session(client)
+    answers = build_fake_answers()
+    _submit_self(client, session["session_id"], answers)
+
+    with orm_engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_participant_token "
+                "ON participants(session_id, invite_token)"
+            )
+        )
+
+    first = _register_participant(client, session["invite_token"], 0)
+    second = _register_participant(client, session["invite_token"], 1)
+
+    _submit_answers(client, first["participant_id"], answers)
+    _submit_answers(client, second["participant_id"], answers)
+
+    status = client.get(f"/v1/invites/{session['invite_token']}/status")
+    assert status.status_code == HTTPStatus.OK
+    payload = status.json()
+    assert payload["respondent_count"] == 2
+    assert payload["unlocked"] is False
